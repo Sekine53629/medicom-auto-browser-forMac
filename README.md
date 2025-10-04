@@ -1,0 +1,1 @@
+# medicom-auto-browser-forMac
