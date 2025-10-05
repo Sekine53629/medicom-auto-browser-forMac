@@ -1,6 +1,9 @@
 # アカウント情報ファイル（機密情報のため除外）
 accounts.json
 
+# 設定ファイル（環境依存のため除外）
+config.json
+
 # Python関連
 __pycache__/
 *.py[cod]
@@ -41,3 +44,9 @@ Thumbs.db
 
 # ダウンロードファイル
 downloads/*.pdf
+
+# デバッグツールの出力（機密情報を含む可能性）
+debug_tools/inspection_results/
+
+# 操作ログ
+logs/
