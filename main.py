@@ -7,10 +7,25 @@ from auth import (
     update_password_menu,
     check_password_expiration,
     login,
+    logout,
     load_accounts
 )
 from operations import daily_inventory, auto_order, check_messages
 from utils import setup_driver
+
+
+def normalize_input(text):
+    """全角数字を半角数字に変換する
+
+    Args:
+        text: 入力文字列
+
+    Returns:
+        str: 半角数字に変換された文字列
+    """
+    # 全角数字を半角数字に変換
+    translation_table = str.maketrans('０１２３４５６７８９', '0123456789')
+    return text.translate(translation_table)
 
 
 def load_config():
@@ -68,7 +83,7 @@ def main():
         print("4. 設定")
         print("5. 終了")
 
-        choice = input("\n選択してください: ")
+        choice = normalize_input(input("\n選択してください: "))
 
         if choice == "1":
             account = select_account()
@@ -97,7 +112,7 @@ def main():
             print(f"2. PDF自動印刷: {'ON' if config['should_print_pdf'] else 'OFF'}")
             print("3. 戻る")
 
-            setting_choice = input("\n変更する項目を選択してください: ")
+            setting_choice = normalize_input(input("\n変更する項目を選択してください: "))
 
             if setting_choice == "1":
                 new_path = input(f"新しいPDF保存先を入力してください（現在: {config['download_path']}）: ")
@@ -129,15 +144,20 @@ def main():
             print("ログインに失敗しました。")
             return
 
+        # 店舗IDを抽出して保持（セッション中使用）
+        from operations import extract_store_id
+        current_store_id = extract_store_id(account['user_id'])
+        print(f"\n現在の店舗ID: {current_store_id}")
+
         # ログイン後のメニュー
         while True:
             print("\n=== 作業メニュー ===")
             print("1. 毎日在庫")
             print("2. 自動発注")
             print("3. 連絡板確認（テスト：1件のみ）")
-            print("4. 終了")
+            print("0. 終了")
 
-            work_choice = input("\n作業を選択してください: ")
+            work_choice = normalize_input(input("\n作業を選択してください: "))
 
             if work_choice == "1":
                 if daily_inventory(driver, download_path, config['should_print_pdf']):
@@ -146,9 +166,11 @@ def main():
                 if auto_order(driver, download_path, config['should_print_pdf']):
                     input("\n処理が完了しました。Enterキーを押して続行...")
             elif work_choice == "3":
-                if check_messages(driver):
+                if check_messages(driver, account['user_id']):
                     input("\n処理が完了しました。Enterキーを押して続行...")
-            elif work_choice == "4":
+            elif work_choice == "0":
+                # ログアウト処理
+                logout(driver)
                 break
             else:
                 print("無効な選択です。")

@@ -184,12 +184,12 @@ def daily_inventory(driver, download_path, should_print=True):
 
         # ステップ1: 月次処理ボタンをクリック
         print("月次処理ボタンを探しています...")
-        if not switch_to_frame_with_element(driver, "//input[@type='image' and contains(@src, '05_getsuji.gif')]"):
+        if not switch_to_frame_with_element(driver, "//input[@type='image' and contains(@src, '00_getuji.gif')]"):
             print("月次処理ボタンが見つかりません")
             return False
 
         monthly_button = wait.until(
-            EC.element_to_be_clickable((By.XPATH, "//input[@type='image' and contains(@src, '05_getsuji.gif')]"))
+            EC.element_to_be_clickable((By.XPATH, "//input[@type='image' and contains(@src, '00_getuji.gif')]"))
         )
         print("✓ 月次処理ボタンをクリックします...")
         monthly_button.click()
@@ -256,37 +256,95 @@ def daily_inventory(driver, download_path, should_print=True):
         driver.execute_script("arguments[0].click();", tanaoroshi_tab)
         operation_logger.info("✓ 棚卸タブのクリックに成功しました")
 
-        # ページ読み込み待機
-        time.sleep(3)
+        # ページ読み込み待機（画面遷移完了を待つ）
+        operation_logger.info("画面遷移の完了を待機しています...")
+        print("画面遷移の完了を待機しています...")
+        if not wait_for_page_load(driver, wait):
+            operation_logger.warning("⚠️ ページ読み込みに時間がかかっています")
+            print("⚠️ ページ読み込みに時間がかかっています")
 
-        # ステップ3: 備考に"毎日"を入力
-        # (既存のコードでは実装されていないため、今後実装する場合はここに追加)
+        # ステップ3: 備考に"毎日"を入力（リトライ処理付き）
+        operation_logger.info("備考フィールドに「毎日」を入力します...")
+        print("備考フィールドに「毎日」を入力します...")
 
-        # ステップ4: 在庫なし薬品を表示チェックボックスをオフにする
+        remark_input_success = False
+        for attempt in range(3):  # 最大3回リトライ
+            try:
+                operation_logger.debug(f"備考フィールド入力試行 {attempt + 1}/3")
+
+                # フレーム内の要素を探す
+                if not switch_to_frame_with_element(driver, "//input[@id='txtReMark']"):
+                    operation_logger.debug(f"フレーム切り替え失敗（試行 {attempt + 1}）")
+                    time.sleep(3)
+                    continue
+
+                # 備考フィールド（txtReMark）を探す
+                remark_field = wait.until(
+                    EC.presence_of_element_located((By.ID, "txtReMark"))
+                )
+                remark_field.clear()
+                remark_field.send_keys("毎日")
+                operation_logger.info("✓ 備考フィールドに「毎日」を入力しました")
+                print("✓ 備考フィールドに「毎日」を入力しました")
+                remark_input_success = True
+                break
+            except Exception as e:
+                operation_logger.warning(f"備考フィールド入力エラー（試行 {attempt + 1}/3）: {e}")
+                if attempt < 2:
+                    print(f"⚠️ 備考フィールドが見つかりません。再試行します...（{attempt + 1}/3）")
+                    time.sleep(5)
+                else:
+                    print(f"⚠️ 備考フィールドが見つからないか、入力できません")
+
+        if not remark_input_success:
+            operation_logger.warning("備考フィールドへの入力に失敗しました")
+
+        # ステップ4: 在庫なし薬品を表示チェックボックスをオフにする（リトライ処理付き）
         operation_logger.info("在庫なし薬品を表示チェックボックスを探しています...")
         print("在庫なし薬品を表示チェックボックスを探しています...")
 
-        try:
-            # チェックボックスのXPath
-            checkbox_xpath = "//input[@id='chkDISP_ZERO' and @type='checkbox']"
-            checkbox = driver.find_element(By.XPATH, checkbox_xpath)
+        checkbox_success = False
+        for attempt in range(3):  # 最大3回リトライ
+            try:
+                operation_logger.debug(f"チェックボックス操作試行 {attempt + 1}/3")
 
-            # チェック状態を確認
-            is_checked = checkbox.is_selected()
-            operation_logger.debug(f"チェックボックス状態: checked={is_checked}")
+                # フレーム内の要素を探す
+                if not switch_to_frame_with_element(driver, "//input[@id='chkDISP_ZERO' and @type='checkbox']"):
+                    operation_logger.debug(f"フレーム切り替え失敗（試行 {attempt + 1}）")
+                    time.sleep(3)
+                    continue
 
-            if is_checked:
-                # チェックを外す
-                checkbox.click()
-                operation_logger.info("✓ 在庫なし薬品を表示チェックボックスをオフにしました")
-                print("✓ 在庫なし薬品を表示チェックボックスをオフにしました")
-            else:
-                operation_logger.info("在庫なし薬品を表示チェックボックスは既にオフです")
-                print("在庫なし薬品を表示チェックボックスは既にオフです")
+                # チェックボックスのXPath
+                checkbox_xpath = "//input[@id='chkDISP_ZERO' and @type='checkbox']"
+                checkbox = wait.until(
+                    EC.presence_of_element_located((By.XPATH, checkbox_xpath))
+                )
 
-        except Exception as e:
-            operation_logger.warning(f"チェックボックス処理でエラー: {e}")
-            print(f"⚠️ チェックボックスが見つからないか、操作できません: {e}")
+                # チェック状態を確認
+                is_checked = checkbox.is_selected()
+                operation_logger.debug(f"チェックボックス状態: checked={is_checked}")
+
+                if is_checked:
+                    # チェックを外す
+                    checkbox.click()
+                    operation_logger.info("✓ 在庫なし薬品を表示チェックボックスをオフにしました")
+                    print("✓ 在庫なし薬品を表示チェックボックスをオフにしました")
+                else:
+                    operation_logger.info("在庫なし薬品を表示チェックボックスは既にオフです")
+                    print("在庫なし薬品を表示チェックボックスは既にオフです")
+
+                checkbox_success = True
+                break
+            except Exception as e:
+                operation_logger.warning(f"チェックボックス処理エラー（試行 {attempt + 1}/3）: {e}")
+                if attempt < 2:
+                    print(f"⚠️ チェックボックスが見つかりません。再試行します...（{attempt + 1}/3）")
+                    time.sleep(5)
+                else:
+                    print(f"⚠️ チェックボックスが見つからないか、操作できません")
+
+        if not checkbox_success:
+            operation_logger.warning("チェックボックス操作に失敗しました")
 
         # ステップ5: 印刷ボタンをクリック（集計完了を待つため、3段階で待機してリトライ）
         operation_logger.info("棚卸集計の完了を待機しています...")
@@ -341,16 +399,36 @@ def daily_inventory(driver, download_path, should_print=True):
                 print("✓ 印刷ボタンをクリックします...")
                 print_button.click()
 
-                # ダイアログのOKボタンをクリック
-                time.sleep(2)
-                try:
-                    ok_button = wait.until(
-                        EC.element_to_be_clickable((By.XPATH, "//input[@value='OK'] | //button[contains(text(), 'OK')]"))
-                    )
-                    ok_button.click()
-                    print("✓ ダイアログのOKボタンをクリックしました")
-                except:
-                    print("ダイアログが見つかりません。自動的に次に進みます。")
+                # 確認ダイアログ（JavaScript alert）が表示されるまで待機
+                operation_logger.info("確認ダイアログの表示を待機しています...")
+                print("確認ダイアログの表示を待機しています...")
+
+                alert_handled = False
+                for alert_attempt in range(3):  # 最大3回リトライ
+                    try:
+                        operation_logger.debug(f"確認ダイアログ検索試行 {alert_attempt + 1}/3")
+                        time.sleep(2)  # ダイアログ表示待機
+
+                        # JavaScript alertを処理
+                        alert = wait.until(EC.alert_is_present())
+                        alert_text = alert.text
+                        operation_logger.info(f"確認ダイアログ: {alert_text}")
+                        print(f"確認ダイアログ: {alert_text}")
+                        alert.accept()  # OKをクリック
+                        operation_logger.info("✓ 確認ダイアログでOKをクリックしました")
+                        print("✓ 確認ダイアログでOKをクリックしました")
+                        alert_handled = True
+                        break
+                    except Exception as e:
+                        operation_logger.debug(f"確認ダイアログ検索エラー（試行 {alert_attempt + 1}/3）: {e}")
+                        if alert_attempt < 2:
+                            print(f"⚠️ 確認ダイアログを探しています...（{alert_attempt + 1}/3）")
+                        else:
+                            operation_logger.warning("確認ダイアログが見つかりませんでした")
+                            print("⚠️ 確認ダイアログが見つかりません。")
+
+                if not alert_handled:
+                    operation_logger.warning("確認ダイアログの処理に失敗しました")
 
                 # PDFダウンロード・印刷処理
                 time.sleep(3)
@@ -598,6 +676,37 @@ def auto_order(driver, download_path, should_print=True):
                 operation_logger.info("✓ 印刷ボタンをクリックします...")
                 print("✓ 印刷ボタンをクリックします...")
                 print_button.click()
+
+                # 確認ダイアログ（JavaScript alert）が表示されるまで待機
+                operation_logger.info("確認ダイアログの表示を待機しています...")
+                print("確認ダイアログの表示を待機しています...")
+
+                alert_handled = False
+                for alert_attempt in range(3):  # 最大3回リトライ
+                    try:
+                        operation_logger.debug(f"確認ダイアログ検索試行 {alert_attempt + 1}/3")
+                        time.sleep(2)  # ダイアログ表示待機
+
+                        # JavaScript alertを処理
+                        alert = wait.until(EC.alert_is_present())
+                        alert_text = alert.text
+                        operation_logger.info(f"確認ダイアログ: {alert_text}")
+                        print(f"確認ダイアログ: {alert_text}")
+                        alert.accept()  # OKをクリック
+                        operation_logger.info("✓ 確認ダイアログでOKをクリックしました")
+                        print("✓ 確認ダイアログでOKをクリックしました")
+                        alert_handled = True
+                        break
+                    except Exception as e:
+                        operation_logger.debug(f"確認ダイアログ検索エラー（試行 {alert_attempt + 1}/3）: {e}")
+                        if alert_attempt < 2:
+                            print(f"⚠️ 確認ダイアログを探しています...（{alert_attempt + 1}/3）")
+                        else:
+                            operation_logger.warning("確認ダイアログが見つかりませんでした")
+                            print("⚠️ 確認ダイアログが見つかりません。")
+
+                if not alert_handled:
+                    operation_logger.warning("確認ダイアログの処理に失敗しました")
 
                 # PDFダウンロード・印刷処理
                 time.sleep(3)
@@ -849,12 +958,174 @@ def auto_order(driver, download_path, should_print=True):
 
 
 # ===========================
+# 不動在庫転送機能
+# ===========================
+
+def load_immobile_stock(store_id):
+    """不動医薬品リストのJSON読み込み（店舗IDごと）
+
+    Args:
+        store_id: 店舗ID（4桁）
+
+    Returns:
+        dict: 不動医薬品リストデータ
+    """
+    stock_file = f"data/immobile_stock_{store_id}.json"
+
+    # ディレクトリが存在しない場合は作成
+    os.makedirs("data", exist_ok=True)
+
+    if os.path.exists(stock_file):
+        with open(stock_file, 'r', encoding='utf-8') as f:
+            return json.load(f)
+    else:
+        return {"medicines": []}
+
+
+def save_immobile_stock(data, store_id):
+    """不動医薬品リストのJSON保存（店舗IDごと）
+
+    Args:
+        data: 保存するデータ
+        store_id: 店舗ID（4桁）
+    """
+    stock_file = f"data/immobile_stock_{store_id}.json"
+
+    # ディレクトリが存在しない場合は作成
+    os.makedirs("data", exist_ok=True)
+
+    with open(stock_file, 'w', encoding='utf-8') as f:
+        json.dump(data, f, ensure_ascii=False, indent=2)
+
+
+def add_medicine_to_immobile_stock(store_id, medicine_data):
+    """不動医薬品リストに薬品を追加
+
+    Args:
+        store_id: 店舗ID（4桁）
+        medicine_data: 薬品データ（辞書形式）
+            {
+                'medicine_name': 薬品名,
+                'quantity': 数量,
+                'unit': 単位,
+                'lot_number': 製造番号（ロット番号）,
+                'expiry_date': 使用期限,
+                'source_message_id': 元メッセージID,
+                'target_stores': [
+                    {
+                        'store_id': 送り先店舗ID,
+                        'store_name': 送り先店舗名,
+                        'status': 'pending' | 'accepted' | 'rejected',
+                        'sent_at': 送信日時,
+                        'responded_at': 返信日時
+                    }
+                ]
+            }
+
+    Returns:
+        bool: 追加成功時True
+    """
+    try:
+        # 不動在庫リストを読み込み
+        immobile_stock = load_immobile_stock(store_id)
+
+        # 新しい薬品データに必要なフィールドを追加
+        new_medicine = {
+            'medicine_id': f"{store_id}_{datetime.now().strftime('%Y%m%d%H%M%S')}",
+            'medicine_name': medicine_data.get('medicine_name'),
+            'quantity': medicine_data.get('quantity'),
+            'unit': medicine_data.get('unit'),
+            'lot_number': medicine_data.get('lot_number', ''),
+            'expiry_date': medicine_data.get('expiry_date'),
+            'source_message_id': medicine_data.get('source_message_id', ''),
+            'status': 'active',  # active, completed, cancelled
+            'created_at': datetime.now().isoformat(),
+            'target_stores': []  # 送り先店舗リスト（後で追加）
+        }
+
+        # リストに追加
+        immobile_stock['medicines'].append(new_medicine)
+
+        # 保存
+        save_immobile_stock(immobile_stock, store_id)
+
+        return True
+
+    except Exception as e:
+        print(f"不動医薬品リストへの追加エラー: {e}")
+        return False
+
+
+def update_target_store_status(store_id, medicine_id, target_store_id, status, message_id=None):
+    """送り先店舗の受け入れ可否ステータスを更新
+
+    Args:
+        store_id: 自店舗ID（4桁）
+        medicine_id: 薬品ID
+        target_store_id: 送り先店舗ID
+        status: ステータス（'accepted' | 'rejected'）
+        message_id: 返信メッセージID（オプション）
+
+    Returns:
+        bool: 更新成功時True
+    """
+    try:
+        # 不動在庫リストを読み込み
+        immobile_stock = load_immobile_stock(store_id)
+
+        # 該当する薬品を探す
+        for medicine in immobile_stock['medicines']:
+            if medicine['medicine_id'] == medicine_id:
+                # 該当する送り先店舗を探す
+                for target in medicine['target_stores']:
+                    if target['store_id'] == target_store_id:
+                        # ステータスを更新
+                        target['status'] = status
+                        target['responded_at'] = datetime.now().isoformat()
+                        if message_id:
+                            target['response_message_id'] = message_id
+
+                        # 保存
+                        save_immobile_stock(immobile_stock, store_id)
+                        return True
+
+        return False
+
+    except Exception as e:
+        print(f"ステータス更新エラー: {e}")
+        return False
+
+
+# ===========================
 # 連絡板関連の機能
 # ===========================
 
-def load_message_stock():
-    """メッセージストックのJSON読み込み"""
-    stock_file = "data/message_stock.json"
+def extract_store_id(user_id):
+    """user_idから店舗ID（4桁）を抽出
+
+    Args:
+        user_id: ユーザーID（例: TRH170501）
+
+    Returns:
+        str: 店舗ID 4桁（例: 1705）
+    """
+    # TRHを除去し、最後の2桁を除外した4桁を取得
+    # 例: TRH170501 → 170501 → 1705
+    match = re.search(r'TRH(\d{4})\d{2}', user_id)
+    if match:
+        return match.group(1)
+    else:
+        # パターンにマッチしない場合はuser_idをそのまま使用
+        return user_id
+
+
+def load_message_stock(store_id):
+    """メッセージストックのJSON読み込み（店舗IDごと）
+
+    Args:
+        store_id: 店舗ID（4桁）
+    """
+    stock_file = f"data/message_stock_{store_id}.json"
 
     # ディレクトリが存在しない場合は作成
     os.makedirs("data", exist_ok=True)
@@ -866,9 +1137,14 @@ def load_message_stock():
         return {"messages": []}
 
 
-def save_message_stock(data):
-    """メッセージストックのJSON保存"""
-    stock_file = "data/message_stock.json"
+def save_message_stock(data, store_id):
+    """メッセージストックのJSON保存（店舗IDごと）
+
+    Args:
+        data: 保存するデータ
+        store_id: 店舗ID（4桁）
+    """
+    stock_file = f"data/message_stock_{store_id}.json"
 
     # ディレクトリが存在しない場合は作成
     os.makedirs("data", exist_ok=True)
@@ -892,16 +1168,18 @@ def parse_message_content(content):
         store_match = re.search(r'調剤薬局(.+?)[\s\*]', content)
         sender_store = store_match.group(1).strip() if store_match else None
 
-        # 薬品情報の抽出（--------で囲まれた部分）
-        medicine_section = re.search(r'-{70,}(.+?)-{70,}', content, re.DOTALL)
+        # 薬品情報の抽出（--------で囲まれた部分全体）
+        # 全てのダッシュ行で区切られたセクションを取得
+        dash_sections = re.findall(r'-{10,}\n(.+?)(?=\n-{10,}|$)', content, re.DOTALL)
 
-        if not medicine_section:
+        if not dash_sections or len(dash_sections) < 2:
             return None
 
-        medicine_text = medicine_section.group(1).strip()
+        # 2番目のセクション（ヘッダーの次）が実際のデータ
+        medicine_text = dash_sections[1].strip() if len(dash_sections) > 1 else dash_sections[0].strip()
 
         # 薬品名と数量の抽出
-        # 例: "点眼・点鼻用リンデロンＡ液(5ml/瓶)/包装小/                     40.00  ml"
+        # 例: "ミノマイシンカプセル１００ｍｇ/PTP/                            100.00  Ｃ"
         lines = medicine_text.split('\n')
 
         medicine_name = None
@@ -909,20 +1187,36 @@ def parse_message_content(content):
         unit = None
         expiry_date = None
 
+        # ヘッダー行をスキップするためのフラグ
+        header_keywords = ['薬品名', '数量', '単位', '使用期限', '余剰在庫']
+
         for i, line in enumerate(lines):
             line = line.strip()
             if not line:
                 continue
 
-            # 薬品名と数量が同じ行にある場合
-            if re.search(r'\d+\.\d+\s+\w+', line):
-                # 数量と単位を抽出
-                qty_match = re.search(r'(\d+\.\d+)\s+(\w+)\s*$', line)
-                if qty_match:
-                    quantity = float(qty_match.group(1))
-                    unit = qty_match.group(2)
-                    # 薬品名は数量の前まで
-                    medicine_name = line[:qty_match.start()].strip()
+            # ヘッダー行をスキップ
+            if any(keyword in line for keyword in header_keywords):
+                continue
+
+            # 薬品名と数量が同じ行にある場合（全角・半角スペース対応）
+            # パターン: 薬品名 + スペース + 数量 + スペース + 単位
+            # 単位は英字（全角・半角）、漢字、カタカナなど（例: Ｃ、ml、錠、カプセル）
+            qty_match = re.search(r'(\d+\.?\d*)\s+(\S+?)\s*$', line)
+            if qty_match and not medicine_name:  # 最初のマッチのみ採用
+                try:
+                    quantity_str = qty_match.group(1)
+                    unit_str = qty_match.group(2).strip()
+
+                    # 単位は通常1-5文字程度（錠、ml、Ｃ、カプセル、など）
+                    if len(unit_str) <= 10:  # 単位として妥当な長さ
+                        quantity = float(quantity_str)
+                        unit = unit_str
+                        # 薬品名は数量の前まで
+                        medicine_name = line[:qty_match.start()].strip()
+                except Exception as e:
+                    # デバッグ用ログ
+                    pass
 
             # 使用期限の抽出（次の行にある場合）
             if '/' in line and re.match(r'\s*\d{4}/\d{2}', line):
@@ -943,8 +1237,13 @@ def parse_message_content(content):
         return None
 
 
-def check_messages(driver):
-    """連絡板の未読メッセージを確認（テスト用：1件のみ処理）"""
+def check_messages(driver, user_id):
+    """連絡板の未読メッセージを確認（テスト用：1件のみ処理）
+
+    Args:
+        driver: Seleniumドライバー
+        user_id: ユーザーID（店舗ID抽出に使用）
+    """
     # ログ設定
     operation_logger, log_file_path = setup_logger()
     operation_logger.info(f"ログファイル: {log_file_path}")
@@ -955,8 +1254,14 @@ def check_messages(driver):
     try:
         wait = WebDriverWait(driver, 10)
 
-        # メッセージストックを読み込み
-        message_stock = load_message_stock()
+        # 店舗IDを抽出
+        store_id = extract_store_id(user_id)
+        operation_logger.info(f"ユーザーID: {user_id}")
+        operation_logger.info(f"店舗ID: {store_id}")
+        print(f"\n店舗ID: {store_id}")
+
+        # メッセージストックを読み込み（店舗IDごと）
+        message_stock = load_message_stock(store_id)
         operation_logger.info(f"現在のストック数: {len(message_stock['messages'])}")
 
         # 受信一覧フレームに切り替え
@@ -1127,7 +1432,7 @@ def check_messages(driver):
                         }
 
                         message_stock['messages'].append(new_message)
-                        save_message_stock(message_stock)
+                        save_message_stock(message_stock, store_id)
 
                         operation_logger.info("✓ メッセージをストックに保存しました")
                         print("\n✓ メッセージをストックに保存しました")

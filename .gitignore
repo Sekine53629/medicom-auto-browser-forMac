@@ -50,3 +50,10 @@ debug_tools/inspection_results/
 
 # 操作ログ
 logs/
+
+# データファイル（実際のメッセージストックや不動在庫データ）
+data/message_stock_*.json
+data/immobile_stock_*.json
+
+# テストファイル
+test_*.py

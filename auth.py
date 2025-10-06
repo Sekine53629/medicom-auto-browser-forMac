@@ -262,3 +262,88 @@ def login(driver, account):
     update_last_login(account)
 
     return True
+
+
+def logout(driver):
+    """ログアウト処理
+
+    Args:
+        driver: Seleniumドライバー
+
+    Returns:
+        bool: ログアウト成功時True、失敗時False
+    """
+    try:
+        print("\nログアウト処理を開始します...")
+
+        # デフォルトコンテンツに戻る
+        driver.switch_to.default_content()
+
+        wait = WebDriverWait(driver, 10)
+
+        # ログアウトボタンを探す（リトライ処理付き）
+        logout_button = None
+        for attempt in range(3):
+            try:
+                # まずデフォルトコンテンツで探す
+                driver.switch_to.default_content()
+                logout_button = driver.find_element(By.ID, "btnLogout")
+                print(f"✓ ログアウトボタンが見つかりました（メインコンテンツ、試行 {attempt + 1}）")
+                break
+            except:
+                # フレーム内を探す
+                print(f"フレーム内を探しています...（試行 {attempt + 1}/3）")
+                driver.switch_to.default_content()
+                frames = driver.find_elements(By.TAG_NAME, "frame") + driver.find_elements(By.TAG_NAME, "iframe")
+
+                for frame in frames:
+                    try:
+                        driver.switch_to.default_content()
+                        driver.switch_to.frame(frame)
+                        logout_button = driver.find_element(By.ID, "btnLogout")
+                        print(f"✓ ログアウトボタンが見つかりました（フレーム内、試行 {attempt + 1}）")
+                        break
+                    except:
+                        continue
+
+                if logout_button:
+                    break
+
+                if attempt < 2:
+                    print(f"⚠️ ログアウトボタンが見つかりません。再試行します...（{attempt + 1}/3）")
+                    time.sleep(2)
+
+        if not logout_button:
+            print("⚠️ ログアウトボタンが見つかりませんでした")
+            return False
+
+        # ログアウトボタンをクリック
+        print("✓ ログアウトボタンをクリックします...")
+        logout_button.click()
+
+        time.sleep(2)
+
+        # アラートダイアログが表示されるか確認（リトライ処理付き）
+        for alert_attempt in range(3):
+            try:
+                alert = wait.until(EC.alert_is_present())
+                alert_text = alert.text
+                print(f"確認ダイアログ: {alert_text}")
+                alert.accept()  # OKをクリック
+                print("✓ ログアウトしました")
+                time.sleep(2)
+                return True
+            except Exception as e:
+                if alert_attempt < 2:
+                    print(f"⚠️ ダイアログを探しています...（{alert_attempt + 1}/3）")
+                    time.sleep(2)
+                else:
+                    # アラートが表示されない場合もログアウト成功とみなす
+                    print("✓ ログアウトしました（ダイアログなし）")
+                    return True
+
+        return True
+
+    except Exception as e:
+        print(f"ログアウトエラー: {e}")
+        return False
