@@ -1238,7 +1238,7 @@ def parse_message_content(content):
 
 
 def check_messages(driver, user_id):
-    """連絡板の未読メッセージを確認（テスト用：1件のみ処理）
+    """連絡板の未読メッセージを確認（5件連続処理）
 
     Args:
         driver: Seleniumドライバー
@@ -1248,7 +1248,7 @@ def check_messages(driver, user_id):
     operation_logger, log_file_path = setup_logger()
     operation_logger.info(f"ログファイル: {log_file_path}")
     operation_logger.info("============================================================")
-    operation_logger.info("連絡板メッセージ確認処理を開始します（テスト用：1件のみ）")
+    operation_logger.info("連絡板メッセージ確認処理を開始します（5件連続処理）")
     operation_logger.info("============================================================")
 
     try:
@@ -1304,152 +1304,207 @@ def check_messages(driver, user_id):
                 print("未読メッセージはありません")
                 return True
 
-            # 「購入伺い」メッセージを探す（テスト用）
-            target_row = None
+            # 「購入伺い」メッセージの件数をカウント
+            target_count = 0
             for row in message_rows:
                 try:
                     title_link = row.find_element(By.XPATH, "./td[3]/a")
                     title = title_link.text.strip()
                     if "購入伺い" in title:
-                        target_row = row
+                        target_count += 1
                         operation_logger.info(f"「購入伺い」メッセージを発見: {title}")
-                        break
+                        if target_count >= 5:  # 最大5件
+                            break
                 except:
                     continue
 
-            if not target_row:
+            if target_count == 0:
                 operation_logger.info("「購入伺い」メッセージが見つかりませんでした")
                 print("「購入伺い」メッセージが見つかりませんでした")
                 return True
 
-            row = target_row
+            operation_logger.info(f"処理対象メッセージ: {target_count}件")
+            print(f"\n処理対象メッセージ: {target_count}件")
 
-            # 受信日時を取得
-            date_cell = row.find_element(By.XPATH, "./td[2]")
-            received_datetime = date_cell.text.strip()
+            # 各メッセージを順番に処理（F5リロードで画面更新）
+            for idx in range(1, target_count + 1):
+                operation_logger.info(f"========== メッセージ {idx}/{target_count} の処理開始 ==========")
+                print(f"\n========== メッセージ {idx}/{target_count} の処理開始 ==========")
 
-            # タイトルリンクを取得
-            title_link = row.find_element(By.XPATH, "./td[3]/a")
-            title = title_link.text.strip()
+                # 2件目以降はF5でリロード（DOM要素をリフレッシュ）
+                if idx > 1:
+                    try:
+                        operation_logger.debug(f"メッセージ {idx} 処理前: F5リロード実行")
 
-            # 送信者を取得
-            sender_cell = row.find_element(By.XPATH, "./td[4]")
-            sender = sender_cell.text.strip()
+                        # メインコンテンツに戻る
+                        driver.switch_to.default_content()
 
-            # メッセージIDを取得（リンクのonclick属性から抽出）
-            onclick_attr = title_link.get_attribute("onclick")
-            # 例: __doPostBack('grdJushin$_ctl3$_ctl0','')
-            message_id = None
-            if onclick_attr:
-                # URLパラメータにIDが含まれる可能性があるため、後でウィンドウから取得
-                pass
+                        # driver.refresh()を使用（F5と同等）
+                        driver.refresh()
+                        time.sleep(3)  # リロード完了待機
 
-            operation_logger.info(f"処理対象メッセージ: {title}")
-            operation_logger.info(f"  受信日時: {received_datetime}")
-            operation_logger.info(f"  送信者: {sender}")
-            print(f"\n処理対象メッセージ:")
-            print(f"  タイトル: {title}")
-            print(f"  受信日時: {received_datetime}")
-            print(f"  送信者: {sender}")
+                        # 再度フレームに切り替え
+                        driver.switch_to.frame("Itiran")
+                        time.sleep(1)
 
-            # 現在のウィンドウハンドルを保存
-            main_window = driver.current_window_handle
+                        operation_logger.info("✓ ページをリロードしました")
+                        print("✓ ページをリロードしました")
+                    except Exception as e:
+                        operation_logger.error(f"リロードエラー: {e}")
+                        print(f"⚠️ リロードに失敗しました")
+                        continue
 
-            # タイトルリンクをクリック（新しいウィンドウで開く）
-            operation_logger.info("メッセージ詳細を開きます...")
-            print("メッセージ詳細を開きます...")
-            title_link.click()
-            time.sleep(2)
+                # メッセージリストを再取得
+                try:
+                    message_rows = driver.find_elements(By.XPATH, "//table[@id='grdJushin']//tr[position()>2]")
 
-            # 新しいウィンドウに切り替え
-            all_windows = driver.window_handles
-            for window in all_windows:
-                if window != main_window:
-                    driver.switch_to.window(window)
-                    break
+                    # 最初の「購入伺い」メッセージを探す
+                    row = None
+                    for msg_row in message_rows:
+                        try:
+                            title_link = msg_row.find_element(By.XPATH, "./td[3]/a")
+                            title = title_link.text.strip()
+                            if "購入伺い" in title:
+                                row = msg_row
+                                break
+                        except:
+                            continue
 
-            # URLからメッセージIDを取得
-            current_url = driver.current_url
-            operation_logger.info(f"メッセージURL: {current_url}")
+                    if not row:
+                        operation_logger.warning(f"メッセージ {idx} が見つかりません（スキップ）")
+                        print(f"⚠️ メッセージ {idx} が見つかりません（スキップ）")
+                        continue
 
-            # URLパラメータからtarget値を抽出
-            target_match = re.search(r'target=(\d+)', current_url)
-            if target_match:
-                message_id = target_match.group(1)
-                operation_logger.info(f"メッセージID: {message_id}")
+                    # 受信日時を取得
+                    date_cell = row.find_element(By.XPATH, "./td[2]")
+                    received_datetime = date_cell.text.strip()
 
-            # メッセージ本文を取得
-            time.sleep(1)
-            body_element = driver.find_element(By.TAG_NAME, "body")
-            message_content = body_element.text
+                    # タイトルリンクを取得
+                    title_link = row.find_element(By.XPATH, "./td[3]/a")
+                    title = title_link.text.strip()
 
-            operation_logger.info("メッセージ本文:")
-            operation_logger.info("-" * 50)
-            operation_logger.info(message_content)
-            operation_logger.info("-" * 50)
+                    # 送信者を取得
+                    sender_cell = row.find_element(By.XPATH, "./td[4]")
+                    sender = sender_cell.text.strip()
+                except Exception as e:
+                    operation_logger.error(f"メッセージ {idx} の情報取得エラー: {e}")
+                    print(f"⚠️ メッセージ {idx} の情報取得に失敗しました")
+                    continue
 
-            print("\nメッセージ本文:")
-            print("-" * 50)
-            print(message_content)
-            print("-" * 50)
+                # メッセージIDを取得（リンクのonclick属性から抽出）
+                onclick_attr = title_link.get_attribute("onclick")
+                # 例: __doPostBack('grdJushin$_ctl3$_ctl0','')
+                message_id = None
+                if onclick_attr:
+                    # URLパラメータにIDが含まれる可能性があるため、後でウィンドウから取得
+                    pass
 
-            # メッセージ本文をパース
-            parsed_data = parse_message_content(message_content)
+                operation_logger.info(f"処理対象メッセージ: {title}")
+                operation_logger.info(f"  受信日時: {received_datetime}")
+                operation_logger.info(f"  送信者: {sender}")
+                print(f"\n処理対象メッセージ:")
+                print(f"  タイトル: {title}")
+                print(f"  受信日時: {received_datetime}")
+                print(f"  送信者: {sender}")
 
-            if parsed_data:
-                operation_logger.info("抽出されたデータ:")
-                operation_logger.info(f"  送信店舗: {parsed_data['sender_store']}")
-                operation_logger.info(f"  医薬品名: {parsed_data['medicine_name']}")
-                operation_logger.info(f"  数量: {parsed_data['quantity']}")
-                operation_logger.info(f"  単位: {parsed_data['unit']}")
-                operation_logger.info(f"  使用期限: {parsed_data['expiry_date']}")
+                # 現在のウィンドウハンドルを保存
+                main_window = driver.current_window_handle
 
-                print("\n抽出されたデータ:")
-                print(f"  送信店舗: {parsed_data['sender_store']}")
-                print(f"  医薬品名: {parsed_data['medicine_name']}")
-                print(f"  数量: {parsed_data['quantity']}")
-                print(f"  単位: {parsed_data['unit']}")
-                print(f"  使用期限: {parsed_data['expiry_date']}")
+                # タイトルリンクをクリック（新しいウィンドウで開く）
+                operation_logger.info("メッセージ詳細を開きます...")
+                print("メッセージ詳細を開きます...")
+                title_link.click()
+                time.sleep(2)
 
-                # メッセージストックに保存（重複チェック）
-                if message_id:
-                    # 重複チェック
-                    existing = [m for m in message_stock['messages'] if m.get('message_id') == message_id]
+                # 新しいウィンドウに切り替え
+                all_windows = driver.window_handles
+                for window in all_windows:
+                    if window != main_window:
+                        driver.switch_to.window(window)
+                        break
 
-                    if not existing:
-                        new_message = {
-                            'message_id': message_id,
-                            'received_datetime': received_datetime,
-                            'title': title,
-                            'sender': sender,
-                            'sender_store': parsed_data['sender_store'],
-                            'medicine_name': parsed_data['medicine_name'],
-                            'quantity': parsed_data['quantity'],
-                            'unit': parsed_data['unit'],
-                            'expiry_date': parsed_data['expiry_date'],
-                            'status': 'unprocessed',
-                            'created_at': datetime.now().isoformat()
-                        }
+                # URLからメッセージIDを取得
+                current_url = driver.current_url
+                operation_logger.info(f"メッセージURL: {current_url}")
 
-                        message_stock['messages'].append(new_message)
-                        save_message_stock(message_stock, store_id)
+                # URLパラメータからtarget値を抽出
+                target_match = re.search(r'target=(\d+)', current_url)
+                if target_match:
+                    message_id = target_match.group(1)
+                    operation_logger.info(f"メッセージID: {message_id}")
 
-                        operation_logger.info("✓ メッセージをストックに保存しました")
-                        print("\n✓ メッセージをストックに保存しました")
-                    else:
-                        operation_logger.info("このメッセージは既にストックに存在します")
-                        print("\nこのメッセージは既にストックに存在します")
-            else:
-                operation_logger.warning("メッセージのパースに失敗しました")
-                print("\n⚠️ メッセージのパースに失敗しました")
+                # メッセージ本文を取得
+                time.sleep(1)
+                body_element = driver.find_element(By.TAG_NAME, "body")
+                message_content = body_element.text
 
-            # ウィンドウを閉じてメインウィンドウに戻る
-            driver.close()
-            driver.switch_to.window(main_window)
+                operation_logger.info("メッセージ本文:")
+                operation_logger.info("-" * 50)
+                operation_logger.info(message_content)
+                operation_logger.info("-" * 50)
 
-            operation_logger.info("連絡板メッセージ確認処理が完了しました（テスト用：1件のみ）")
+                print("\nメッセージ本文:")
+                print("-" * 50)
+                print(message_content)
+                print("-" * 50)
+
+                # メッセージ本文をパース
+                parsed_data = parse_message_content(message_content)
+
+                if parsed_data:
+                    operation_logger.info("抽出されたデータ:")
+                    operation_logger.info(f"  送信店舗: {parsed_data['sender_store']}")
+                    operation_logger.info(f"  医薬品名: {parsed_data['medicine_name']}")
+                    operation_logger.info(f"  数量: {parsed_data['quantity']}")
+                    operation_logger.info(f"  単位: {parsed_data['unit']}")
+                    operation_logger.info(f"  使用期限: {parsed_data['expiry_date']}")
+
+                    print("\n抽出されたデータ:")
+                    print(f"  送信店舗: {parsed_data['sender_store']}")
+                    print(f"  医薬品名: {parsed_data['medicine_name']}")
+                    print(f"  数量: {parsed_data['quantity']}")
+                    print(f"  単位: {parsed_data['unit']}")
+                    print(f"  使用期限: {parsed_data['expiry_date']}")
+
+                    # メッセージストックに保存（重複チェック）
+                    if message_id:
+                        # 重複チェック
+                        existing = [m for m in message_stock['messages'] if m.get('message_id') == message_id]
+
+                        if not existing:
+                            new_message = {
+                                'message_id': message_id,
+                                'received_datetime': received_datetime,
+                                'title': title,
+                                'sender': sender,
+                                'sender_store': parsed_data['sender_store'],
+                                'medicine_name': parsed_data['medicine_name'],
+                                'quantity': parsed_data['quantity'],
+                                'unit': parsed_data['unit'],
+                                'expiry_date': parsed_data['expiry_date'],
+                                'status': 'unprocessed',
+                                'created_at': datetime.now().isoformat()
+                            }
+
+                            message_stock['messages'].append(new_message)
+                            save_message_stock(message_stock, store_id)
+
+                            operation_logger.info("✓ メッセージをストックに保存しました")
+                            print("\n✓ メッセージをストックに保存しました")
+                        else:
+                            operation_logger.info("このメッセージは既にストックに存在します")
+                            print("\nこのメッセージは既にストックに存在します")
+                else:
+                    operation_logger.warning("メッセージのパースに失敗しました")
+                    print("\n⚠️ メッセージのパースに失敗しました")
+
+                # ウィンドウを閉じてメインウィンドウに戻る
+                driver.close()
+                driver.switch_to.window(main_window)
+
+            operation_logger.info(f"連絡板メッセージ確認処理が完了しました（{target_count}件処理）")
             operation_logger.info(f"ログファイル: {log_file_path}")
-            print("\n✓ 連絡板メッセージ確認処理が完了しました（テスト用：1件のみ）")
+            print(f"\n✓ 連絡板メッセージ確認処理が完了しました（{target_count}件処理）")
 
             return True
 

@@ -154,7 +154,7 @@ def main():
             print("\n=== 作業メニュー ===")
             print("1. 毎日在庫")
             print("2. 自動発注")
-            print("3. 連絡板確認（テスト：1件のみ）")
+            print("3. 連絡板確認（最大5件）")
             print("0. 終了")
 
             work_choice = normalize_input(input("\n作業を選択してください: "))

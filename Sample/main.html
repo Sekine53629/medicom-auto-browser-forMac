@@ -1,0 +1,283 @@
+
+<script>var W01; W01=window.open("I_Jushin.aspx?target=300023525913","Meisai","toolbar=no,location=no,directories=no,status=yes,menubar=yes,scrollbars=yes,resizable=yes,width=936,height=669");W01.moveTo(0,0);W01.focus();</script>
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.0 Transitional//EN">
+<html lang="ja">
+	<HEAD><title>
+	受信一覧
+</title><meta content="Microsoft Visual Studio .NET 7.1" name="GENERATOR"><meta content="Visual Basic .NET 7.1" name="CODE_LANGUAGE"><meta content="JavaScript" name="vs_defaultClientScript"><meta content="http://schemas.microsoft.com/intellisense/ie5" name="vs_targetSchema">
+        <script type="text/javascript" src="jquery/jquery-1.8.2.min.js"></script>
+        <script type="text/javascript">
+            $(document).ready(function(){
+                var userAgent = window.navigator.userAgent.toLowerCase();
+                if (userAgent.indexOf('ipad') != -1) {
+                    $("#grdJushin tbody tr:first-child td span").css("font-size","20px");
+                    $("#grdJushin tbody tr:first-child td span").css("margin-left","2rem");
+                    $("#grdJushin tbody tr:first-child td a").css("font-size","20px");
+                    $("#grdJushin tbody tr:first-child td a").css("margin-left","2rem");
+                    $("#Table1").css("width","100%");
+                    ChangeGridDivSize();
+                    ChangeGridDivSizeIPAD();
+                    $(parent.window).resize(function(){
+                        ChangeGridDivSize();
+                    });
+                    $(parent.window).bind('orientationchange', function(e) {
+                        ChangeGridDivSizeIPAD();
+                    });
+                }
+            });
+            function ChangeGridDivSizeIPAD()
+            {
+                if (screen == null) {
+                    return;
+                }
+                var title_h = $("#titleFrame", parent.document).height();
+                var menu_h  = $("#menuFrame", parent.document).height();
+                var joken_h = $("#jokenFrame", parent.document).height();
+                var parent_w = $("html",parent.document).width();
+                // window_hは、
+                // portrait時はheight
+                // landscape時はwidth
+                var calc_h =0;
+                var window_h= 0;
+                var landscape_h = 0;
+                if (parent.orientation == 0) {
+                    window_h= screen.height;
+                    calc_h = 250;
+                    landscape_h = 180;
+                } else {
+                    window_h= screen.width;
+                    calc_h = 0;
+                    landscape_h = 180;
+                }
+                calc_h = calc_h + window_h - (title_h + menu_h + joken_h) - 100;
+
+                $("#grdJushin").css("width","1000px");
+                $("#freezingDiv").css("height",(calc_h - landscape_h) + "px");
+                $("#freezingDiv").css("overflow","scroll");
+                $("#div_grid_out").css("padding-top","24px");
+                $("#div_grid_out").css("position","relative");
+                
+                $("table#grdJushin tbody tr:first-child").css("position","absolute");
+                $("table#grdJushin tbody tr:first-child").css("top","0px");
+                $("table#grdJushin tbody tr:first-child").css("left","0px");
+                
+            }
+            function ChangeGridDivSize(){
+            
+                var myTbl = document.getElementById('grdJushin');
+
+                if(myTbl){
+
+                    document.getElementById("freezingDiv").style.width = document.body.clientWidth - 50;
+                    document.getElementById("Table1").style.width = document.getElementById("freezingDiv").style.width;
+                    
+                    var i_height = 0;
+                        i_height = document.body.clientHeight  - 80;
+                        i_height = i_height - 30;
+                    
+                    if(i_height > 0){
+                        document.getElementById("freezingDiv").style.height = i_height.toString() + "px";
+                    }
+                
+                }
+            }
+        </script>
+	<link href="App_Themes/Pharnes/Pharnes.css" type="text/css" rel="stylesheet" /></HEAD>
+	<body bottomMargin="0" leftMargin="0" topMargin="4" rightMargin="0" id="BD" onload="fncSetScrollTop('BD','txtScroll');">
+		<form name="Form1" method="post" action="I_JushinList.aspx" id="Form1">
+<input type="hidden" name="__EVENTTARGET" id="__EVENTTARGET" value="" />
+<input type="hidden" name="__EVENTARGUMENT" id="__EVENTARGUMENT" value="" />
+<input type="hidden" name="__VIEWSTATE" id="__VIEWSTATE" value="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BQzjgrfjgrnjg4bjg6BkZAIGDw8WAh8AZWRkAgcPZBYCAgEPDxYCHwcFDy4vaW1nL0R1bW15Lmljb2RkAggPDxYCHwAFDDMwMDAyMzQ1MDYyMmRkAhcPD2QWAh4Hb25jbGljawU6cmV0dXJuIGNvbmZpcm0oJ+WJiumZpOOBl+OBpuOCguOCiOOCjeOBl+OBhOOBp+OBmeOBi++8nycpO2QYAQUeX19Db250cm9sc1JlcXVpcmVQb3N0QmFja0tleV9fFg8FF2dyZEp1c2hpbjpfY3RsMzpjaGtJdGVtBRdncmRKdXNoaW46X2N0bDQ6Y2hrSXRlbQUXZ3JkSnVzaGluOl9jdGw1OmNoa0l0ZW0FF2dyZEp1c2hpbjpfY3RsNjpjaGtJdGVtBRdncmRKdXNoaW46X2N0bDc6Y2hrSXRlbQUXZ3JkSnVzaGluOl9jdGw4OmNoa0l0ZW0FF2dyZEp1c2hpbjpfY3RsOTpjaGtJdGVtBRhncmRKdXNoaW46X2N0bDEwOmNoa0l0ZW0FGGdyZEp1c2hpbjpfY3RsMTE6Y2hrSXRlbQUYZ3JkSnVzaGluOl9jdGwxMjpjaGtJdGVtBRhncmRKdXNoaW46X2N0bDEzOmNoa0l0ZW0FGGdyZEp1c2hpbjpfY3RsMTQ6Y2hrSXRlbQUYZ3JkSnVzaGluOl9jdGwxNTpjaGtJdGVtBRhncmRKdXNoaW46X2N0bDE2OmNoa0l0ZW0FGGdyZEp1c2hpbjpfY3RsMTc6Y2hrSXRlbcO5vA3xQ831OWjFALeudW/NfAcz" />
+
+<script type="text/javascript">
+<!--
+var theForm = document.forms['Form1'];
+if (!theForm) {
+    theForm = document.Form1;
+}
+function __doPostBack(eventTarget, eventArgument) {
+    if (!theForm.onsubmit || (theForm.onsubmit() != false)) {
+        theForm.__EVENTTARGET.value = eventTarget;
+        theForm.__EVENTARGUMENT.value = eventArgument;
+        theForm.submit();
+    }
+}
+// -->
+</script>
+
+
+<script language="javascript" type="text/javascript">    function CheckAll(aspCheckBoxID, checkVal) {        re = new RegExp('[:$$]' + aspCheckBoxID + '?$');        for( i = 0; i < document.forms[0].elements.length; i++ ) {            elm = document.forms[0].elements[i];        if (elm.type == 'checkbox') {                if (re.test(elm.name)) {                    elm.checked = checkVal;                }            }        }    }    function fncSetScrollTop(ObjectName, strScrollTop) {        document.getElementById(ObjectName).scrollTop = document.getElementById(strScrollTop).value;    }</script>
+<input type="hidden" name="__VIEWSTATEGENERATOR" id="__VIEWSTATEGENERATOR" value="8E431969" />
+			<TABLE id="Table1" cellSpacing="1" cellPadding="1" width="900" align="center" border="0">
+				<TR>
+					<TD style="WIDTH: 527px;HEIGHT: 27px">
+					    <span id="Label1" style="color:Black;">■ 受信一覧</span>
+					    <span>　　　</span>
+						<span id="lblSelectionState" style="width:119px;">未読のみ</span>
+					</TD>
+					<TD style="HEIGHT: 27px">
+						<P align="right"><FONT face="MS UI Gothic">
+                                <input name="txtScroll" type="text" value="0" readonly="readonly" id="txtScroll" class="hideControl" onfocus="this.style.backgroundColor='#fde4b8';" onblur="this.style.backgroundColor='white';" style="background-color:White;border-color:White;width:0px;" /></FONT></P>
+					</TD>
+				</TR>
+				<TR>
+					<TD style="WIDTH: 527px;HEIGHT: 29px"><FONT face="MS UI Gothic">
+							<span id="lblErr" style="color:Red;width:100%;"></span></FONT></TD>
+					<TD style="HEIGHT: 29px">
+						<P align="right"><a id="lnkAllDisp" href="javascript:__doPostBack('lnkAllDisp','')">全て表示</a>&nbsp;&nbsp;
+							<a id="lnkMidokuDisp" href="javascript:__doPostBack('lnkMidokuDisp','')">未読のみ</a>&nbsp;&nbsp;
+							<a id="lnkKidokuDisp" href="javascript:__doPostBack('lnkKidokuDisp','')">既読のみ</a>&nbsp;&nbsp;
+							<a id="lnkHoryuDisp" href="javascript:__doPostBack('lnkHoryuDisp','')">保留のみ</a>&nbsp;&nbsp;
+							<input type="submit" name="btnRefresh" value="再表示" id="btnRefresh" /></P>
+					</TD>
+				</TR>
+			</TABLE>
+            <div id="div_grid_out">
+			<TABLE id="Table2" cellSpacing="1" cellPadding="1" width="900" align="center" border="0">
+				<TR>
+                    <TD colSpan="2">
+                    <div id="freezingDiv" onscroll="scrollkeep()" style="overflow: auto; Width: 950px">
+                    <table cellspacing="2" cellpadding="1" border="0" id="grdJushin" style="background-color:White;width:100%;">
+	<tr>
+		<td colspan="6"><span>1</span>&nbsp;<a href="javascript:__doPostBack('grdJushin$_ctl1$_ctl1','')">2</a>&nbsp;<a href="javascript:__doPostBack('grdJushin$_ctl1$_ctl2','')">3</a>&nbsp;<a href="javascript:__doPostBack('grdJushin$_ctl1$_ctl3','')">4</a>&nbsp;<a href="javascript:__doPostBack('grdJushin$_ctl1$_ctl4','')">5</a>&nbsp;<a href="javascript:__doPostBack('grdJushin$_ctl1$_ctl5','')">6</a>&nbsp;<a href="javascript:__doPostBack('grdJushin$_ctl1$_ctl6','')">7</a>&nbsp;<a href="javascript:__doPostBack('grdJushin$_ctl1$_ctl7','')">8</a>&nbsp;<a href="javascript:__doPostBack('grdJushin$_ctl1$_ctl8','')">9</a>&nbsp;<a href="javascript:__doPostBack('grdJushin$_ctl1$_ctl9','')">10</a></td>
+	</tr><tr align="center" style="background-color:#B7CDFC;">
+		<td align="center" style="width:20px;">
+										<FONT face="MS UI Gothic"><INPUT id="chkAllItems" onclick="CheckAll('chkItem',document.forms[0].chkAllItems.checked)"
+												type="checkbox"> </FONT>
+									</td><td align="center" style="width:120px;">受信日時</td><td style="width:400px;">タイトル</td><td align="center" style="width:150px;">送信者</td><td style="width:50px;">状態</td><td align="center" style="width:32px;">保留</td>
+	</tr><tr>
+		<td align="center">
+										<FONT face="MS UI Gothic">
+											<input id="grdJushin__ctl3_chkItem" type="checkbox" name="grdJushin:_ctl3:chkItem" /></FONT>
+									</td><td align="left">2025/10/ 5 02:07</td><td><a href="javascript:__doPostBack('grdJushin$_ctl3$_ctl0','')">マッチング：使用期限(2026/07/31) クラシエ柴胡加竜骨牡蛎湯エキス細粒(3ｇ/包)/分包/(4987045652363)</a></td><td align="left">システム</td><td></td><td align="center">
+										<FONT face="MS UI Gothic">
+											<img id="grdJushin__ctl3_Image2" src="./img/Dummy.ico" border="0" /></FONT>
+									</td>
+	</tr><tr style="background-color:#D7D7D7;">
+		<td align="center">
+										<FONT face="MS UI Gothic">
+											<input id="grdJushin__ctl4_chkItem" type="checkbox" name="grdJushin:_ctl4:chkItem" /></FONT>
+									</td><td align="left">2025/10/ 4 18:55</td><td><a href="javascript:__doPostBack('grdJushin$_ctl4$_ctl0','')">購入伺い</a></td><td align="left">ツ)上溝店</td><td></td><td align="center">
+										<FONT face="MS UI Gothic">
+											<img id="grdJushin__ctl4_Image2" src="./img/Dummy.ico" border="0" /></FONT>
+									</td>
+	</tr><tr>
+		<td align="center">
+										<FONT face="MS UI Gothic">
+											<input id="grdJushin__ctl5_chkItem" type="checkbox" name="grdJushin:_ctl5:chkItem" /></FONT>
+									</td><td align="left">2025/10/ 4 18:45</td><td><a href="javascript:__doPostBack('grdJushin$_ctl5$_ctl0','')">購入伺い</a></td><td align="left">ツ)上溝店</td><td></td><td align="center">
+										<FONT face="MS UI Gothic">
+											<img id="grdJushin__ctl5_Image2" src="./img/Dummy.ico" border="0" /></FONT>
+									</td>
+	</tr><tr style="background-color:#D7D7D7;">
+		<td align="center">
+										<FONT face="MS UI Gothic">
+											<input id="grdJushin__ctl6_chkItem" type="checkbox" name="grdJushin:_ctl6:chkItem" /></FONT>
+									</td><td align="left">2025/10/ 4 18:25</td><td><a href="javascript:__doPostBack('grdJushin$_ctl6$_ctl0','')">購入伺い</a></td><td align="left">ツ)上溝店</td><td></td><td align="center">
+										<FONT face="MS UI Gothic">
+											<img id="grdJushin__ctl6_Image2" src="./img/Dummy.ico" border="0" /></FONT>
+									</td>
+	</tr><tr>
+		<td align="center">
+										<FONT face="MS UI Gothic">
+											<input id="grdJushin__ctl7_chkItem" type="checkbox" name="grdJushin:_ctl7:chkItem" /></FONT>
+									</td><td align="left">2025/10/ 4 18:21</td><td><a href="javascript:__doPostBack('grdJushin$_ctl7$_ctl0','')">購入伺い</a></td><td align="left">ツ)上溝店</td><td></td><td align="center">
+										<FONT face="MS UI Gothic">
+											<img id="grdJushin__ctl7_Image2" src="./img/Dummy.ico" border="0" /></FONT>
+									</td>
+	</tr><tr style="background-color:#D7D7D7;">
+		<td align="center">
+										<FONT face="MS UI Gothic">
+											<input id="grdJushin__ctl8_chkItem" type="checkbox" name="grdJushin:_ctl8:chkItem" /></FONT>
+									</td><td align="left">2025/10/ 4 18:12</td><td><a href="javascript:__doPostBack('grdJushin$_ctl8$_ctl0','')">購入伺い</a></td><td align="left">ツ)上溝店</td><td></td><td align="center">
+										<FONT face="MS UI Gothic">
+											<img id="grdJushin__ctl8_Image2" src="./img/Dummy.ico" border="0" /></FONT>
+									</td>
+	</tr><tr>
+		<td align="center">
+										<FONT face="MS UI Gothic">
+											<input id="grdJushin__ctl9_chkItem" type="checkbox" name="grdJushin:_ctl9:chkItem" /></FONT>
+									</td><td align="left">2025/10/ 4 15:53</td><td><a href="javascript:__doPostBack('grdJushin$_ctl9$_ctl0','')">購入伺い</a></td><td align="left">ツ)稚内潮見店</td><td></td><td align="center">
+										<FONT face="MS UI Gothic">
+											<img id="grdJushin__ctl9_Image2" src="./img/Dummy.ico" border="0" /></FONT>
+									</td>
+	</tr><tr style="background-color:#D7D7D7;">
+		<td align="center">
+										<FONT face="MS UI Gothic">
+											<input id="grdJushin__ctl10_chkItem" type="checkbox" name="grdJushin:_ctl10:chkItem" /></FONT>
+									</td><td align="left">2025/10/ 4 15:45</td><td><a href="javascript:__doPostBack('grdJushin$_ctl10$_ctl0','')">購入伺い</a></td><td align="left">ツ)稚内潮見店</td><td></td><td align="center">
+										<FONT face="MS UI Gothic">
+											<img id="grdJushin__ctl10_Image2" src="./img/Dummy.ico" border="0" /></FONT>
+									</td>
+	</tr><tr>
+		<td align="center">
+										<FONT face="MS UI Gothic">
+											<input id="grdJushin__ctl11_chkItem" type="checkbox" name="grdJushin:_ctl11:chkItem" /></FONT>
+									</td><td align="left">2025/10/ 4 14:31</td><td><a href="javascript:__doPostBack('grdJushin$_ctl11$_ctl0','')">購入伺い</a></td><td align="left">ツ)十和田店</td><td></td><td align="center">
+										<FONT face="MS UI Gothic">
+											<img id="grdJushin__ctl11_Image2" src="./img/Dummy.ico" border="0" /></FONT>
+									</td>
+	</tr><tr style="background-color:#D7D7D7;">
+		<td align="center">
+										<FONT face="MS UI Gothic">
+											<input id="grdJushin__ctl12_chkItem" type="checkbox" name="grdJushin:_ctl12:chkItem" /></FONT>
+									</td><td align="left">2025/10/ 4 11:43</td><td><a href="javascript:__doPostBack('grdJushin$_ctl12$_ctl0','')">購入伺い</a></td><td align="left">ツ)旭川末広北店</td><td></td><td align="center">
+										<FONT face="MS UI Gothic">
+											<img id="grdJushin__ctl12_Image2" src="./img/Dummy.ico" border="0" /></FONT>
+									</td>
+	</tr><tr>
+		<td align="center">
+										<FONT face="MS UI Gothic">
+											<input id="grdJushin__ctl13_chkItem" type="checkbox" name="grdJushin:_ctl13:chkItem" /></FONT>
+									</td><td align="left">2025/10/ 4 10:13</td><td><a href="javascript:__doPostBack('grdJushin$_ctl13$_ctl0','')">不可Re:購入伺い</a></td><td align="left">ツ)旭川末広北店</td><td></td><td align="center">
+										<FONT face="MS UI Gothic">
+											<img id="grdJushin__ctl13_Image2" src="./img/Dummy.ico" border="0" /></FONT>
+									</td>
+	</tr><tr style="background-color:#D7D7D7;">
+		<td align="center">
+										<FONT face="MS UI Gothic">
+											<input id="grdJushin__ctl14_chkItem" type="checkbox" name="grdJushin:_ctl14:chkItem" /></FONT>
+									</td><td align="left">2025/10/ 4 09:54</td><td><a href="javascript:__doPostBack('grdJushin$_ctl14$_ctl0','')">購入伺い</a></td><td align="left">ツ)稚内潮見店</td><td></td><td align="center">
+										<FONT face="MS UI Gothic">
+											<img id="grdJushin__ctl14_Image2" src="./img/Dummy.ico" border="0" /></FONT>
+									</td>
+	</tr><tr>
+		<td align="center">
+										<FONT face="MS UI Gothic">
+											<input id="grdJushin__ctl15_chkItem" type="checkbox" name="grdJushin:_ctl15:chkItem" /></FONT>
+									</td><td align="left">2025/10/ 4 02:11</td><td><a href="javascript:__doPostBack('grdJushin$_ctl15$_ctl0','')">マッチング：使用期限(2026/07/31) リリカＯＤ錠２５ｍｇ/PTP/(4987901011600)</a></td><td align="left">システム</td><td></td><td align="center">
+										<FONT face="MS UI Gothic">
+											<img id="grdJushin__ctl15_Image2" src="./img/Dummy.ico" border="0" /></FONT>
+									</td>
+	</tr><tr style="background-color:#D7D7D7;">
+		<td align="center">
+										<FONT face="MS UI Gothic">
+											<input id="grdJushin__ctl16_chkItem" type="checkbox" name="grdJushin:_ctl16:chkItem" /></FONT>
+									</td><td align="left">2025/10/ 4 02:11</td><td><a href="javascript:__doPostBack('grdJushin$_ctl16$_ctl0','')">マッチング：使用期限(2026/07/31) リマプロストアルファデクス錠５μｇ｢サワイ｣/PTP/(4987080303916)</a></td><td align="left">システム</td><td></td><td align="center">
+										<FONT face="MS UI Gothic">
+											<img id="grdJushin__ctl16_Image2" src="./img/Dummy.ico" border="0" /></FONT>
+									</td>
+	</tr><tr>
+		<td align="center">
+										<FONT face="MS UI Gothic">
+											<input id="grdJushin__ctl17_chkItem" type="checkbox" name="grdJushin:_ctl17:chkItem" /></FONT>
+									</td><td align="left">2025/10/ 3 02:53</td><td><a href="javascript:__doPostBack('grdJushin$_ctl17$_ctl0','')">マッチング：使用期限(2026/07/31) 強力ポステリザン(軟膏)(2ｇ/本)/包装小/(4987213021304)</a></td><td align="left">システム</td><td></td><td align="center">
+										<FONT face="MS UI Gothic">
+											<img id="grdJushin__ctl17_Image2" src="./img/Dummy.ico" border="0" /></FONT>
+									</td>
+	</tr>
+</table>
+                        </div>
+                    </TD>
+				</TR>
+				<TR>
+					<TD colSpan="2"><FONT face="MS UI Gothic"><input type="submit" name="btnKidoku" value="既読にする" id="btnKidoku" />&nbsp;
+							<input type="submit" name="btnDelete" value="削除" onclick="return confirm('削除してもよろしいですか？');" language="javascript" id="btnDelete" />&nbsp;&nbsp;
+							<input type="submit" name="btnMidoku" value="未読にする" id="btnMidoku" />&nbsp;
+							<input type="submit" name="btnHoryu" value="保留/解除" id="btnHoryu" /></FONT></TD>
+				</TR>
+			</TABLE>
+            </div>
+		</form>
+	</body>
+</html>
