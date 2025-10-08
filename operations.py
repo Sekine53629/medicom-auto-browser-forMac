@@ -48,6 +48,152 @@ operation_logger = None
 current_log_file = None
 
 
+def safe_click(driver, element, description, wait_time=2, logger=None):
+    """要素を安全にクリックし、標準待機時間（デフォルト2秒）で待機する
+
+    メッセージ閲覧、伝票作成など通常の操作用。
+
+    Args:
+        driver: Seleniumドライバー
+        element: クリック対象の要素
+        description: 操作の説明（ログ出力用）
+        wait_time: クリック後の待機時間（秒）デフォルト2秒
+        logger: ロガーオブジェクト
+
+    Returns:
+        bool: 成功時True、失敗時False
+    """
+    try:
+        if logger:
+            logger.info(f"{description}をクリックします...")
+        print(f"{description}をクリックします...")
+
+        element.click()
+        time.sleep(wait_time)
+
+        return True
+    except Exception as e:
+        if logger:
+            logger.error(f"{description}のクリックに失敗: {e}")
+        print(f"⚠️ {description}のクリックに失敗: {e}")
+        return False
+
+
+def safe_click_heavy(driver, element, description, wait_time=10, logger=None):
+    """要素を安全にクリックし、長めの待機時間（デフォルト10秒）で待機する
+
+    発注処理など、100件近い医薬品集計を伴う重い処理用。
+
+    Args:
+        driver: Seleniumドライバー
+        element: クリック対象の要素
+        description: 操作の説明（ログ出力用）
+        wait_time: クリック後の待機時間（秒）デフォルト10秒
+        logger: ロガーオブジェクト
+
+    Returns:
+        bool: 成功時True、失敗時False
+    """
+    try:
+        if logger:
+            logger.info(f"{description}をクリックします（重い処理：約{wait_time}秒待機）...")
+        print(f"{description}をクリックします（重い処理：約{wait_time}秒待機）...")
+
+        element.click()
+        time.sleep(wait_time)
+
+        return True
+    except Exception as e:
+        if logger:
+            logger.error(f"{description}のクリックに失敗: {e}")
+        print(f"⚠️ {description}のクリックに失敗: {e}")
+        return False
+
+
+def safe_find_and_click(driver, by, value, description, wait_time=2, logger=None):
+    """要素を検索してクリックし、標準待機時間で待機する
+
+    メッセージ閲覧、伝票作成など通常の操作用。
+
+    Args:
+        driver: Seleniumドライバー
+        by: 検索方法（By.ID, By.XPATH等）
+        value: 検索値
+        description: 操作の説明（ログ出力用）
+        wait_time: クリック後の待機時間（秒）デフォルト2秒
+        logger: ロガーオブジェクト
+
+    Returns:
+        bool: 成功時True、失敗時False
+    """
+    try:
+        element = driver.find_element(by, value)
+        return safe_click(driver, element, description, wait_time, logger)
+    except Exception as e:
+        if logger:
+            logger.error(f"{description}の要素が見つかりません: {e}")
+        print(f"⚠️ {description}の要素が見つかりません: {e}")
+        return False
+
+
+def safe_find_and_click_heavy(driver, by, value, description, wait_time=10, logger=None):
+    """要素を検索してクリックし、長めの待機時間で待機する
+
+    発注処理など、100件近い医薬品集計を伴う重い処理用。
+
+    Args:
+        driver: Seleniumドライバー
+        by: 検索方法（By.ID, By.XPATH等）
+        value: 検索値
+        description: 操作の説明（ログ出力用）
+        wait_time: クリック後の待機時間（秒）デフォルト10秒
+        logger: ロガーオブジェクト
+
+    Returns:
+        bool: 成功時True、失敗時False
+    """
+    try:
+        element = driver.find_element(by, value)
+        return safe_click_heavy(driver, element, description, wait_time, logger)
+    except Exception as e:
+        if logger:
+            logger.error(f"{description}の要素が見つかりません: {e}")
+        print(f"⚠️ {description}の要素が見つかりません: {e}")
+        return False
+
+
+def safe_wait(seconds, description=None, logger=None):
+    """指定時間待機する（通常用）
+
+    1〜3秒程度の通常待機に使用。
+
+    Args:
+        seconds: 待機時間（秒）
+        description: 待機の説明（ログ出力用）
+        logger: ロガーオブジェクト
+    """
+    if description and logger:
+        logger.debug(f"{description}: {seconds}秒待機")
+    time.sleep(seconds)
+
+
+def safe_wait_heavy(seconds, description=None, logger=None):
+    """指定時間待機する（重い処理用）
+
+    10秒以上の長時間待機に使用。発注処理など。
+
+    Args:
+        seconds: 待機時間（秒）
+        description: 待機の説明（ログ出力用）
+        logger: ロガーオブジェクト
+    """
+    if description and logger:
+        logger.info(f"{description}: {seconds}秒待機（重い処理）")
+    else:
+        print(f"{description}: {seconds}秒待機" if description else f"{seconds}秒待機（重い処理）")
+    time.sleep(seconds)
+
+
 def wait_for_page_load(driver, wait, max_retries=3, retry_delay=5):
     """ページが完全に読み込まれるまで待機（リトライ機能付き）
 
@@ -355,31 +501,31 @@ def daily_inventory(driver, download_path, should_print=True):
         # 第1回試行: 5秒待機
         operation_logger.info("[第1回] 5秒待機してから印刷ボタンを探します...")
         print("[第1回] 5秒待機してから印刷ボタンを探します...")
-        time.sleep(5)
+        safe_wait(5, "第1回印刷ボタン待機", operation_logger)
 
         if switch_to_frame_with_element(driver, "//input[@value='印刷'] | //input[@type='button' and contains(@onclick, '印刷')] | //a[contains(text(), '印刷')]"):
             print_button_found = True
             operation_logger.info("✓ 印刷ボタンが見つかりました")
             print("✓ 印刷ボタンが見つかりました")
         else:
-            # 第2回試行: 30秒待機
+            # 第2回試行: 30秒待機（集計処理中）
             operation_logger.warning("⚠️ 印刷ボタンが見つかりませんでした。")
             operation_logger.info("[第2回] 30秒待機してから再度探します...")
             print("⚠️ 印刷ボタンが見つかりませんでした。")
             print("[第2回] 30秒待機してから再度探します...")
-            time.sleep(30)
+            safe_wait_heavy(30, "第2回印刷ボタン待機（集計処理中）", operation_logger)
 
             if switch_to_frame_with_element(driver, "//input[@value='印刷'] | //input[@type='button' and contains(@onclick, '印刷')] | //a[contains(text(), '印刷')]"):
                 print_button_found = True
                 operation_logger.info("✓ 印刷ボタンが見つかりました")
                 print("✓ 印刷ボタンが見つかりました")
             else:
-                # 第3回試行: 5分待機
+                # 第3回試行: 300秒(5分)待機（重い集計処理）
                 operation_logger.warning("⚠️ 印刷ボタンが見つかりませんでした。集計に時間がかかっている可能性があります。")
-                operation_logger.info("[第3回] 5分待機してから再度探します...")
+                operation_logger.info("[第3回] 300秒(5分)待機してから再度探します...")
                 print("⚠️ 集計に時間がかかっている可能性があります。")
-                print("[第3回] 5分待機してから再度探します...")
-                time.sleep(300)  # 5分 = 300秒
+                print("[第3回] 300秒(5分)待機してから再度探します...")
+                safe_wait_heavy(300, "第3回印刷ボタン待機（重い集計処理）", operation_logger)
 
                 if switch_to_frame_with_element(driver, "//input[@value='印刷'] | //input[@type='button' and contains(@onclick, '印刷')] | //a[contains(text(), '印刷')]"):
                     print_button_found = True
@@ -633,31 +779,31 @@ def auto_order(driver, download_path, should_print=True):
         # 第1回試行: 5秒待機
         operation_logger.info("[第1回] 5秒待機してから印刷ボタンを探します...")
         print("[第1回] 5秒待機してから印刷ボタンを探します...")
-        time.sleep(5)
+        safe_wait(5, "第1回印刷ボタン待機", operation_logger)
 
         if switch_to_frame_with_element(driver, "//input[@value='印刷'] | //input[@type='button' and contains(@onclick, '印刷')] | //a[contains(text(), '印刷')]"):
             print_button_found = True
             operation_logger.info("✓ 印刷ボタンが見つかりました")
             print("✓ 印刷ボタンが見つかりました")
         else:
-            # 第2回試行: 30秒待機
+            # 第2回試行: 30秒待機（集計処理中）
             operation_logger.warning("⚠️ 印刷ボタンが見つかりませんでした。")
             operation_logger.info("[第2回] 30秒待機してから再度探します...")
             print("⚠️ 印刷ボタンが見つかりませんでした。")
             print("[第2回] 30秒待機してから再度探します...")
-            time.sleep(30)
+            safe_wait_heavy(30, "第2回印刷ボタン待機（集計処理中）", operation_logger)
 
             if switch_to_frame_with_element(driver, "//input[@value='印刷'] | //input[@type='button' and contains(@onclick, '印刷')] | //a[contains(text(), '印刷')]"):
                 print_button_found = True
                 operation_logger.info("✓ 印刷ボタンが見つかりました")
                 print("✓ 印刷ボタンが見つかりました")
             else:
-                # 第3回試行: 5分待機
+                # 第3回試行: 300秒(5分)待機（重い集計処理）
                 operation_logger.warning("⚠️ 印刷ボタンが見つかりませんでした。集計に時間がかかっている可能性があります。")
-                operation_logger.info("[第3回] 5分待機してから再度探します...")
+                operation_logger.info("[第3回] 300秒(5分)待機してから再度探します...")
                 print("⚠️ 集計に時間がかかっている可能性があります。")
-                print("[第3回] 5分待機してから再度探します...")
-                time.sleep(300)  # 5分 = 300秒
+                print("[第3回] 300秒(5分)待機してから再度探します...")
+                safe_wait_heavy(300, "第3回印刷ボタン待機（重い集計処理）", operation_logger)
 
                 if switch_to_frame_with_element(driver, "//input[@value='印刷'] | //input[@type='button' and contains(@onclick, '印刷')] | //a[contains(text(), '印刷')]"):
                     print_button_found = True
@@ -1160,12 +1306,18 @@ def parse_message_content(content):
         content: メッセージ本文（テキスト）
 
     Returns:
-        dict: 抽出された情報（送信店舗名、医薬品名、数量、単位、使用期限）
-              パース失敗時はNone
+        list: 抽出された医薬品情報のリスト（複数ロット対応）
+              各要素は dict: {送信店舗名、医薬品名、数量、単位、使用期限}
+              パース失敗時は空リスト
     """
     try:
-        # 送信店舗名の抽出（例: "調剤薬局ツルハドラッグ旭川末広北店"）
-        store_match = re.search(r'調剤薬局(.+?)[\s\*]', content)
+        # 送信店舗名の抽出（***で囲まれた部分から正式名称を取得）
+        # 例: "*  ウォンツ薬局　日赤病院前店"
+        store_match = re.search(r'\*+\s*\n\s*\*\s+(.+?)\s*\n', content)
+        if not store_match:
+            # 旧パターン: "調剤薬局ツルハドラッグ..."
+            store_match = re.search(r'調剤薬局(.+?)[\s\*\n]', content)
+
         sender_store = store_match.group(1).strip() if store_match else None
 
         # 薬品情報の抽出（--------で囲まれた部分全体）
@@ -1173,72 +1325,73 @@ def parse_message_content(content):
         dash_sections = re.findall(r'-{10,}\n(.+?)(?=\n-{10,}|$)', content, re.DOTALL)
 
         if not dash_sections or len(dash_sections) < 2:
-            return None
+            return []
 
         # 2番目のセクション（ヘッダーの次）が実際のデータ
         medicine_text = dash_sections[1].strip() if len(dash_sections) > 1 else dash_sections[0].strip()
 
-        # 薬品名と数量の抽出
-        # 例: "ミノマイシンカプセル１００ｍｇ/PTP/                            100.00  Ｃ"
+        # 薬品名と数量の抽出（複数ロット対応）
         lines = medicine_text.split('\n')
-
-        medicine_name = None
-        quantity = None
-        unit = None
-        expiry_date = None
 
         # ヘッダー行をスキップするためのフラグ
         header_keywords = ['薬品名', '数量', '単位', '使用期限', '余剰在庫']
 
-        for i, line in enumerate(lines):
-            line = line.strip()
-            if not line:
+        results = []
+        current_medicine = None
+
+        i = 0
+        while i < len(lines):
+            line = lines[i].strip()
+            if not line or any(keyword in line for keyword in header_keywords):
+                i += 1
                 continue
 
-            # ヘッダー行をスキップ
-            if any(keyword in line for keyword in header_keywords):
-                continue
-
-            # 薬品名と数量が同じ行にある場合（全角・半角スペース対応）
-            # パターン: 薬品名 + スペース + 数量 + スペース + 単位
-            # 単位は英字（全角・半角）、漢字、カタカナなど（例: Ｃ、ml、錠、カプセル）
+            # 薬品名と数量が同じ行にある場合
             qty_match = re.search(r'(\d+\.?\d*)\s+(\S+?)\s*$', line)
-            if qty_match and not medicine_name:  # 最初のマッチのみ採用
+            if qty_match:
                 try:
                     quantity_str = qty_match.group(1)
                     unit_str = qty_match.group(2).strip()
 
-                    # 単位は通常1-5文字程度（錠、ml、Ｃ、カプセル、など）
-                    if len(unit_str) <= 10:  # 単位として妥当な長さ
+                    # 単位は通常1-10文字程度
+                    if len(unit_str) <= 10:
+                        medicine_name = line[:qty_match.start()].strip()
                         quantity = float(quantity_str)
                         unit = unit_str
-                        # 薬品名は数量の前まで
-                        medicine_name = line[:qty_match.start()].strip()
-                except Exception as e:
-                    # デバッグ用ログ
+
+                        # 次の行に使用期限があるかチェック
+                        expiry_date = None
+                        if i + 1 < len(lines):
+                            next_line = lines[i + 1].strip()
+                            if '/' in next_line and re.match(r'\s*\d{4}/\d{2}', next_line):
+                                expiry_match = re.search(r'(\d{4}/\d{2})', next_line)
+                                if expiry_match:
+                                    expiry_date = expiry_match.group(1)
+                                    i += 1  # 期限行をスキップ
+
+                        # 結果に追加
+                        results.append({
+                            'sender_store': sender_store,
+                            'medicine_name': medicine_name,
+                            'quantity': quantity,
+                            'unit': unit,
+                            'expiry_date': expiry_date
+                        })
+                        current_medicine = medicine_name
+                except Exception:
                     pass
 
-            # 使用期限の抽出（次の行にある場合）
-            if '/' in line and re.match(r'\s*\d{4}/\d{2}', line):
-                expiry_match = re.search(r'(\d{4}/\d{2})', line)
-                if expiry_match:
-                    expiry_date = expiry_match.group(1)
+            i += 1
 
-        return {
-            'sender_store': sender_store,
-            'medicine_name': medicine_name,
-            'quantity': quantity,
-            'unit': unit,
-            'expiry_date': expiry_date
-        }
+        return results
 
     except Exception as e:
         print(f"メッセージパースエラー: {e}")
-        return None
+        return []
 
 
 def check_messages(driver, user_id):
-    """連絡板の未読メッセージを確認（5件連続処理）
+    """連絡板の未読メッセージを確認（10件連続処理）
 
     Args:
         driver: Seleniumドライバー
@@ -1248,7 +1401,7 @@ def check_messages(driver, user_id):
     operation_logger, log_file_path = setup_logger()
     operation_logger.info(f"ログファイル: {log_file_path}")
     operation_logger.info("============================================================")
-    operation_logger.info("連絡板メッセージ確認処理を開始します（5件連続処理）")
+    operation_logger.info("連絡板メッセージ確認処理を開始します（10件連続処理）")
     operation_logger.info("============================================================")
 
     try:
@@ -1304,23 +1457,24 @@ def check_messages(driver, user_id):
                 print("未読メッセージはありません")
                 return True
 
-            # 「購入伺い」メッセージの件数をカウント
+            # 「購入伺い」と「マッチング：使用期限」メッセージの件数をカウント
             target_count = 0
             for row in message_rows:
                 try:
                     title_link = row.find_element(By.XPATH, "./td[3]/a")
                     title = title_link.text.strip()
-                    if "購入伺い" in title:
+                    # 完全一致または前方一致
+                    if title == "購入伺い" or title.startswith("マッチング：使用期限"):
                         target_count += 1
-                        operation_logger.info(f"「購入伺い」メッセージを発見: {title}")
-                        if target_count >= 5:  # 最大5件
+                        operation_logger.info(f"処理対象メッセージを発見: {title}")
+                        if target_count >= 10:  # 最大10件
                             break
                 except:
                     continue
 
             if target_count == 0:
-                operation_logger.info("「購入伺い」メッセージが見つかりませんでした")
-                print("「購入伺い」メッセージが見つかりませんでした")
+                operation_logger.info("処理対象メッセージが見つかりませんでした")
+                print("処理対象メッセージが見つかりませんでした")
                 return True
 
             operation_logger.info(f"処理対象メッセージ: {target_count}件")
@@ -1358,13 +1512,14 @@ def check_messages(driver, user_id):
                 try:
                     message_rows = driver.find_elements(By.XPATH, "//table[@id='grdJushin']//tr[position()>2]")
 
-                    # 最初の「購入伺い」メッセージを探す
+                    # 最初の処理対象メッセージを探す
                     row = None
                     for msg_row in message_rows:
                         try:
                             title_link = msg_row.find_element(By.XPATH, "./td[3]/a")
                             title = title_link.text.strip()
-                            if "購入伺い" in title:
+                            # 「購入伺い」（完全一致）または「マッチング：使用期限」（前方一致）
+                            if title == "購入伺い" or title.startswith("マッチング：使用期限"):
                                 row = msg_row
                                 break
                         except:
@@ -1411,10 +1566,7 @@ def check_messages(driver, user_id):
                 main_window = driver.current_window_handle
 
                 # タイトルリンクをクリック（新しいウィンドウで開く）
-                operation_logger.info("メッセージ詳細を開きます...")
-                print("メッセージ詳細を開きます...")
-                title_link.click()
-                time.sleep(2)
+                safe_click(driver, title_link, "メッセージ詳細", 2, operation_logger)
 
                 # 新しいウィンドウに切り替え
                 all_windows = driver.window_handles
@@ -1433,70 +1585,152 @@ def check_messages(driver, user_id):
                     message_id = target_match.group(1)
                     operation_logger.info(f"メッセージID: {message_id}")
 
-                # メッセージ本文を取得
-                time.sleep(1)
-                body_element = driver.find_element(By.TAG_NAME, "body")
-                message_content = body_element.text
+                # タイトルに応じて処理を分岐
+                if title == "購入伺い":
+                    # 購入伺いメッセージ：医薬品情報を抽出してストック保存
+                    operation_logger.info("「購入伺い」メッセージを処理します")
+                    print("\n「購入伺い」メッセージを処理します")
 
-                operation_logger.info("メッセージ本文:")
-                operation_logger.info("-" * 50)
-                operation_logger.info(message_content)
-                operation_logger.info("-" * 50)
+                    # メッセージ本文を取得
+                    safe_wait(1, "メッセージ本文読み込み待機", operation_logger)
+                    body_element = driver.find_element(By.TAG_NAME, "body")
+                    message_content = body_element.text
 
-                print("\nメッセージ本文:")
-                print("-" * 50)
-                print(message_content)
-                print("-" * 50)
+                    operation_logger.info("メッセージ本文:")
+                    operation_logger.info("-" * 50)
+                    operation_logger.info(message_content)
+                    operation_logger.info("-" * 50)
 
-                # メッセージ本文をパース
-                parsed_data = parse_message_content(message_content)
+                    print("\nメッセージ本文:")
+                    print("-" * 50)
+                    print(message_content)
+                    print("-" * 50)
 
-                if parsed_data:
-                    operation_logger.info("抽出されたデータ:")
-                    operation_logger.info(f"  送信店舗: {parsed_data['sender_store']}")
-                    operation_logger.info(f"  医薬品名: {parsed_data['medicine_name']}")
-                    operation_logger.info(f"  数量: {parsed_data['quantity']}")
-                    operation_logger.info(f"  単位: {parsed_data['unit']}")
-                    operation_logger.info(f"  使用期限: {parsed_data['expiry_date']}")
+                    # メッセージ本文をパース（複数ロット対応）
+                    parsed_data_list = parse_message_content(message_content)
 
-                    print("\n抽出されたデータ:")
-                    print(f"  送信店舗: {parsed_data['sender_store']}")
-                    print(f"  医薬品名: {parsed_data['medicine_name']}")
-                    print(f"  数量: {parsed_data['quantity']}")
-                    print(f"  単位: {parsed_data['unit']}")
-                    print(f"  使用期限: {parsed_data['expiry_date']}")
+                    if parsed_data_list:
+                        operation_logger.info(f"抽出されたデータ: {len(parsed_data_list)}件のロット")
+                        print(f"\n抽出されたデータ: {len(parsed_data_list)}件のロット")
 
-                    # メッセージストックに保存（重複チェック）
-                    if message_id:
-                        # 重複チェック
-                        existing = [m for m in message_stock['messages'] if m.get('message_id') == message_id]
+                        # 各ロットをストックに保存
+                        saved_count = 0
+                        for lot_idx, parsed_data in enumerate(parsed_data_list, 1):
+                            operation_logger.info(f"  [{lot_idx}] 送信店舗: {parsed_data['sender_store']}")
+                            operation_logger.info(f"      医薬品名: {parsed_data['medicine_name']}")
+                            operation_logger.info(f"      数量: {parsed_data['quantity']}")
+                            operation_logger.info(f"      単位: {parsed_data['unit']}")
+                            operation_logger.info(f"      使用期限: {parsed_data['expiry_date']}")
 
-                        if not existing:
-                            new_message = {
-                                'message_id': message_id,
-                                'received_datetime': received_datetime,
-                                'title': title,
-                                'sender': sender,
-                                'sender_store': parsed_data['sender_store'],
-                                'medicine_name': parsed_data['medicine_name'],
-                                'quantity': parsed_data['quantity'],
-                                'unit': parsed_data['unit'],
-                                'expiry_date': parsed_data['expiry_date'],
-                                'status': 'unprocessed',
-                                'created_at': datetime.now().isoformat()
-                            }
+                            print(f"  [{lot_idx}] 送信店舗: {parsed_data['sender_store']}")
+                            print(f"      医薬品名: {parsed_data['medicine_name']}")
+                            print(f"      数量: {parsed_data['quantity']}")
+                            print(f"      単位: {parsed_data['unit']}")
+                            print(f"      使用期限: {parsed_data['expiry_date']}")
 
-                            message_stock['messages'].append(new_message)
+                            # メッセージストックに保存（重複チェック）
+                            if message_id:
+                                # 重複チェック（メッセージID + 医薬品名 + 使用期限で判定）
+                                lot_key = f"{message_id}_{parsed_data['medicine_name']}_{parsed_data['expiry_date']}"
+                                existing = [m for m in message_stock['messages']
+                                           if m.get('message_id') == message_id
+                                           and m.get('medicine_name') == parsed_data['medicine_name']
+                                           and m.get('expiry_date') == parsed_data['expiry_date']]
+
+                                if not existing:
+                                    new_message = {
+                                        'message_id': message_id,
+                                        'lot_key': lot_key,
+                                        'received_datetime': received_datetime,
+                                        'title': title,
+                                        'sender': sender,
+                                        'sender_store': parsed_data['sender_store'],
+                                        'medicine_name': parsed_data['medicine_name'],
+                                        'quantity': parsed_data['quantity'],
+                                        'unit': parsed_data['unit'],
+                                        'expiry_date': parsed_data['expiry_date'],
+                                        'status': 'unprocessed',
+                                        'created_at': datetime.now().isoformat()
+                                    }
+
+                                    message_stock['messages'].append(new_message)
+                                    saved_count += 1
+                                else:
+                                    operation_logger.info(f"      → このロットは既にストックに存在します")
+                                    print(f"      → このロットは既にストックに存在します")
+
+                        if saved_count > 0:
                             save_message_stock(message_stock, store_id)
-
-                            operation_logger.info("✓ メッセージをストックに保存しました")
-                            print("\n✓ メッセージをストックに保存しました")
+                            operation_logger.info(f"✓ メッセージをストックに保存しました（{saved_count}件のロット）")
+                            print(f"\n✓ メッセージをストックに保存しました（{saved_count}件のロット）")
                         else:
-                            operation_logger.info("このメッセージは既にストックに存在します")
-                            print("\nこのメッセージは既にストックに存在します")
-                else:
-                    operation_logger.warning("メッセージのパースに失敗しました")
-                    print("\n⚠️ メッセージのパースに失敗しました")
+                            operation_logger.info("全てのロットが既にストックに存在します")
+                            print("\n全てのロットが既にストックに存在します")
+                    else:
+                        operation_logger.warning("メッセージのパースに失敗しました")
+                        print("\n⚠️ メッセージのパースに失敗しました")
+
+                elif title.startswith("マッチング：使用期限"):
+                    # マッチングメッセージ：出庫処理を自動実行（最大3回リトライ）
+                    operation_logger.info("「マッチング：使用期限」メッセージを処理します")
+                    print("\n「マッチング：使用期限」メッセージを処理します")
+
+                    max_retries = 3
+                    success = False
+
+                    for retry_count in range(max_retries):
+                        try:
+                            if retry_count > 0:
+                                operation_logger.info(f"リトライ {retry_count}/{max_retries - 1} を実行します...")
+                                print(f"\nリトライ {retry_count}/{max_retries - 1} を実行します...")
+                                safe_wait(3, "リトライ前待機", operation_logger)
+
+                            # 出庫処理リンクをクリック（通常待機）
+                            safe_wait(1, "出庫処理ボタン検索前", operation_logger)
+                            if not safe_find_and_click(driver, By.ID, "lnkSyukko", "出庫処理ボタン", 2, operation_logger):
+                                raise Exception("出庫処理ボタンのクリックに失敗")
+
+                            # 再計算ボタンをクリック（通常待機）
+                            if not safe_find_and_click(driver, By.ID, "btnRecalc", "再計算ボタン", 2, operation_logger):
+                                raise Exception("再計算ボタンのクリックに失敗")
+
+                            # 出庫するボタンをクリック（通常待機）
+                            if not safe_find_and_click(driver, By.ID, "btnSyuko", "出庫するボタン", 2, operation_logger):
+                                raise Exception("出庫するボタンのクリックに失敗")
+
+                            # アラート（確認ダイアログ）の処理
+                            try:
+                                alert = driver.switch_to.alert
+                                alert_text = alert.text
+                                operation_logger.info(f"確認ダイアログ: {alert_text}")
+                                print(f"確認ダイアログ: {alert_text}")
+                                alert.accept()  # OKをクリック
+                                time.sleep(2)
+                                operation_logger.info("✓ 出庫処理が完了しました")
+                                print("\n✓ 出庫処理が完了しました")
+                                success = True
+                                break
+                            except:
+                                # アラートがない場合も成功とみなす
+                                operation_logger.info("✓ 出庫処理が完了しました（確認ダイアログなし）")
+                                print("\n✓ 出庫処理が完了しました")
+                                success = True
+                                break
+
+                        except Exception as e:
+                            operation_logger.error(f"出庫処理エラー (試行 {retry_count + 1}/{max_retries}): {e}")
+                            print(f"\n⚠️ 出庫処理に失敗しました (試行 {retry_count + 1}/{max_retries}): {e}")
+
+                            if retry_count < max_retries - 1:
+                                operation_logger.info("待機時間を3秒に延長してリトライします...")
+                                print("待機時間を3秒に延長してリトライします...")
+                            else:
+                                operation_logger.error("最大リトライ回数に達しました。このメッセージの処理をスキップします。")
+                                print("\n⚠️ 最大リトライ回数に達しました。このメッセージの処理をスキップします。")
+
+                    if not success:
+                        operation_logger.warning("出庫処理が完了できませんでした")
+                        print("\n⚠️ 出庫処理が完了できませんでした")
 
                 # ウィンドウを閉じてメインウィンドウに戻る
                 driver.close()
