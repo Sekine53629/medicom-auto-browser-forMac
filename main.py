@@ -70,7 +70,7 @@ def save_config(config):
 
 def main():
     """メイン処理"""
-    print("=== PDF自動ダウンロード・印刷システム（Mac版） ===\n")
+    print("=== PDF自動ダウンロード・印刷システム ===\n")
 
     # 設定を読み込む
     config = load_config()

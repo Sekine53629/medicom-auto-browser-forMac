@@ -1,4 +1,4 @@
-"""ユーティリティ関数（Mac版）"""
+"""ユーティリティ関数"""
 import os
 import time
 import subprocess
@@ -7,7 +7,7 @@ from selenium.webdriver.chrome.options import Options
 
 
 def setup_driver(download_path):
-    """Chromeドライバーをセットアップ（Mac版）"""
+    """Chromeドライバーをセットアップ"""
     chrome_options = Options()
 
     # PDFダウンロード設定
@@ -39,7 +39,7 @@ def download_pdf(driver, download_path):
 
 
 def print_pdf(pdf_path):
-    """PDFファイルを印刷（Mac版）"""
+    """PDFファイルを印刷"""
     if not pdf_path or not os.path.exists(pdf_path):
         print("印刷するPDFファイルが見つかりません。")
         return False
@@ -65,7 +65,7 @@ def print_pdf(pdf_path):
 
 
 def get_default_printer():
-    """デフォルトプリンタを取得（Mac版）"""
+    """デフォルトプリンタを取得"""
     try:
         result = subprocess.run(
             ['lpstat', '-d'],
@@ -85,7 +85,7 @@ def get_default_printer():
 
 
 def print_pdf_with_printer(pdf_path, printer_name=None):
-    """指定されたプリンタでPDFファイルを印刷（Mac版）"""
+    """指定されたプリンタでPDFファイルを印刷"""
     if not pdf_path or not os.path.exists(pdf_path):
         print("印刷するPDFファイルが見つかりません。")
         return False

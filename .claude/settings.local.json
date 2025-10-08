@@ -5,7 +5,12 @@
       "Bash(git commit:*)",
       "Bash(git push:*)",
       "Bash(python test_parse_message.py:*)",
-      "Bash(python:*)"
+      "Bash(python:*)",
+      "Read(//c/Users/0053629/Downloads/**)",
+      "Bash(pip install:*)",
+      "Bash(netstat:*)",
+      "Bash(findstr:*)",
+      "Bash(cat:*)"
     ],
     "deny": [],
     "ask": []
