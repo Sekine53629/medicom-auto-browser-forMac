@@ -127,7 +127,13 @@ def safe_find_and_click(driver, by, value, description, wait_time=2, logger=None
         bool: 成功時True、失敗時False
     """
     try:
-        element = driver.find_element(by, value)
+        # 明示的な待機を使用
+        wait = WebDriverWait(driver, 10)
+        element = wait.until(EC.presence_of_element_located((by, value)))
+
+        if logger:
+            logger.info(f"{description}が見つかりました")
+
         return safe_click(driver, element, description, wait_time, logger)
     except Exception as e:
         if logger:
@@ -225,6 +231,106 @@ def wait_for_page_load(driver, wait, max_retries=3, retry_delay=5):
                 return False
 
     return False
+
+
+def wait_for_shipping_screen(driver, logger=None, timeout=15):
+    """出庫画面への遷移を確認する
+
+    出庫処理ボタンをクリックした後、メインウィンドウが出庫画面に切り替わるまで待機する。
+    画面の完全な読み込みを確認してからTrueを返す。
+
+    Args:
+        driver: Seleniumドライバー
+        logger: ロガーオブジェクト
+        timeout: タイムアウト時間（秒）
+
+    Returns:
+        bool: 出庫画面への遷移が確認できた場合True、タイムアウトの場合False
+    """
+    try:
+        if logger:
+            logger.info("出庫画面への遷移を確認中...")
+
+        # 現在のURLを記録
+        initial_url = driver.current_url
+        if logger:
+            logger.debug(f"初期URL: {initial_url}")
+
+        # URLが変わるまで待機（HomeMain.aspxから別のページへ）
+        wait = WebDriverWait(driver, timeout)
+        try:
+            wait.until(lambda d: d.current_url != initial_url)
+            if logger:
+                logger.info(f"✓ URLが変更されました: {driver.current_url}")
+        except:
+            if logger:
+                logger.warning(f"⚠️ URLが変更されませんでした（タイムアウト{timeout}秒）")
+                logger.warning(f"現在のURL: {driver.current_url}")
+            return False
+
+        # document.readyStateがcompleteになるまで待機
+        wait.until(lambda d: d.execute_script('return document.readyState') == 'complete')
+
+        if logger:
+            logger.debug("ページの基本読み込みが完了しました")
+
+        # 追加で3秒待機（JavaScriptやフレームの読み込み完了を待つ）
+        time.sleep(3)
+
+        # 出庫画面の特徴的な要素が存在するか確認
+        # （btnRecalcやbtnSyukoが存在するか、またはフレーム内に存在するか）
+        try:
+            # デフォルトコンテンツで確認
+            driver.switch_to.default_content()
+
+            # ページ内に btnRecalc または btnSyuko が存在するか確認
+            # （フレーム内にある可能性もあるので、存在確認のみ）
+            wait_short = WebDriverWait(driver, 3)
+
+            # まずフレーム外を確認
+            try:
+                wait_short.until(
+                    lambda d: len(d.find_elements(By.ID, "btnRecalc")) > 0 or
+                             len(d.find_elements(By.ID, "btnSyuko")) > 0
+                )
+                if logger:
+                    logger.info("✓ 出庫画面への遷移を確認しました（フレーム外にボタンを検出）")
+                return True
+            except:
+                # フレーム外に見つからない場合、フレーム内を確認
+                iframes = driver.find_elements(By.TAG_NAME, "iframe")
+                if logger:
+                    logger.debug(f"フレーム数: {len(iframes)}")
+
+                for i, iframe in enumerate(iframes):
+                    try:
+                        driver.switch_to.frame(iframe)
+                        if len(driver.find_elements(By.ID, "btnRecalc")) > 0 or \
+                           len(driver.find_elements(By.ID, "btnSyuko")) > 0:
+                            if logger:
+                                logger.info(f"✓ 出庫画面への遷移を確認しました（フレーム{i}内にボタンを検出）")
+                            driver.switch_to.default_content()
+                            return True
+                        driver.switch_to.default_content()
+                    except:
+                        driver.switch_to.default_content()
+                        continue
+
+                # どのフレームにも見つからなかった場合は失敗
+                if logger:
+                    logger.error("⚠️ 出庫画面のボタンが見つかりません")
+                return False
+
+        except Exception as e:
+            if logger:
+                logger.error(f"出庫画面の要素確認エラー: {e}")
+            return False
+
+    except Exception as e:
+        if logger:
+            logger.error(f"出庫画面への遷移確認エラー: {e}")
+        print(f"⚠️ 出庫画面への遷移確認エラー: {e}")
+        return False
 
 
 def go_back_to_main(driver, wait, max_attempts=3):
@@ -1390,19 +1496,50 @@ def parse_message_content(content):
         return []
 
 
-def check_messages(driver, user_id):
-    """連絡板の未読メッセージを確認（10件連続処理）
+def check_messages(driver, user_id, config=None):
+    """連絡板の未読メッセージを確認（連続処理）
 
     Args:
         driver: Seleniumドライバー
         user_id: ユーザーID（店舗ID抽出に使用）
+        config: 設定情報（タイトルスキップ設定、最大処理件数を含む）
     """
+    # config未指定の場合はデフォルト値を使用
+    if config is None:
+        config = {
+            "message_processing": {
+                "購入伺い": True,
+                "マッチング：使用期限": True,
+                "不動在庫転送": True,
+                "返信": True
+            },
+            "max_message_count": 10
+        }
+
+    # 最大処理件数を取得
+    max_message_count = config.get('max_message_count', 10)
+
     # ログ設定
     operation_logger, log_file_path = setup_logger()
     operation_logger.info(f"ログファイル: {log_file_path}")
     operation_logger.info("============================================================")
-    operation_logger.info("連絡板メッセージ確認処理を開始します（10件連続処理）")
+    operation_logger.info(f"連絡板メッセージ確認処理を開始します（最大{max_message_count}件連続処理）")
     operation_logger.info("============================================================")
+
+    # メッセージ処理設定を表示
+    msg_processing = config.get('message_processing', {})
+    operation_logger.info(f"メッセージ処理設定: {msg_processing}")
+
+    # 処理可能なメールタイトルとその設定
+    enabled_count = sum(1 for enabled in msg_processing.values() if enabled)
+    disabled_count = len(msg_processing) - enabled_count
+
+    if enabled_count > 0:
+        print(f"処理対象メール: {enabled_count}種類 (スキップ: {disabled_count}種類)")
+    else:
+        print("\n⚠️ すべてのメールタイプがスキップ設定されています")
+        print("設定メニューから処理するメールを選択してください")
+        return False
 
     try:
         wait = WebDriverWait(driver, 10)
@@ -1457,18 +1594,36 @@ def check_messages(driver, user_id):
                 print("未読メッセージはありません")
                 return True
 
-            # 「購入伺い」と「マッチング：使用期限」メッセージの件数をカウント
+            # 処理対象メッセージの件数をカウント
             target_count = 0
             for row in message_rows:
                 try:
                     title_link = row.find_element(By.XPATH, "./td[3]/a")
                     title = title_link.text.strip()
-                    # 完全一致または前方一致
-                    if title == "購入伺い" or title.startswith("マッチング：使用期限"):
-                        target_count += 1
-                        operation_logger.info(f"処理対象メッセージを発見: {title}")
-                        if target_count >= 10:  # 最大10件
-                            break
+
+                    # タイトルが処理対象かチェック
+                    should_process = False
+
+                    # 「購入伺い」の完全一致チェック
+                    if title == "購入伺い" and msg_processing.get("購入伺い", True):
+                        should_process = True
+                    # 「マッチング：使用期限」の前方一致チェック
+                    elif title.startswith("マッチング：使用期限") and msg_processing.get("マッチング：使用期限", True):
+                        should_process = True
+                    # その他のタイトル（将来の拡張用）
+                    elif title.startswith("不動在庫転送") and msg_processing.get("不動在庫転送", True):
+                        should_process = True
+                    elif title.startswith("Re:") and msg_processing.get("返信", True):
+                        should_process = True
+
+                    if not should_process:
+                        operation_logger.info(f"スキップ: {title} (設定で無効)")
+                        continue
+
+                    target_count += 1
+                    operation_logger.info(f"処理対象メッセージを発見: {title}")
+                    if target_count >= max_message_count:  # 設定された最大件数
+                        break
                 except:
                     continue
 
@@ -1518,8 +1673,23 @@ def check_messages(driver, user_id):
                         try:
                             title_link = msg_row.find_element(By.XPATH, "./td[3]/a")
                             title = title_link.text.strip()
-                            # 「購入伺い」（完全一致）または「マッチング：使用期限」（前方一致）
-                            if title == "購入伺い" or title.startswith("マッチング：使用期限"):
+
+                            # タイトルが処理対象かチェック
+                            should_process = False
+
+                            # 「購入伺い」の完全一致チェック
+                            if title == "購入伺い" and msg_processing.get("購入伺い", True):
+                                should_process = True
+                            # 「マッチング：使用期限」の前方一致チェック
+                            elif title.startswith("マッチング：使用期限") and msg_processing.get("マッチング：使用期限", True):
+                                should_process = True
+                            # その他のタイトル
+                            elif title.startswith("不動在庫転送") and msg_processing.get("不動在庫転送", True):
+                                should_process = True
+                            elif title.startswith("Re:") and msg_processing.get("返信", True):
+                                should_process = True
+
+                            if should_process:
                                 row = msg_row
                                 break
                         except:
@@ -1684,17 +1854,50 @@ def check_messages(driver, user_id):
                                 operation_logger.info(f"リトライ {retry_count}/{max_retries - 1} を実行します...")
                                 print(f"\nリトライ {retry_count}/{max_retries - 1} を実行します...")
                                 safe_wait(3, "リトライ前待機", operation_logger)
+                            else:
+                                # 初回のみ：出庫処理リンクをクリック（このクリックでメッセージウィンドウが閉じる）
+                                safe_wait(1, "出庫処理ボタン検索前", operation_logger)
 
-                            # 出庫処理リンクをクリック（通常待機）
-                            safe_wait(1, "出庫処理ボタン検索前", operation_logger)
-                            if not safe_find_and_click(driver, By.ID, "lnkSyukko", "出庫処理ボタン", 2, operation_logger):
-                                raise Exception("出庫処理ボタンのクリックに失敗")
+                                operation_logger.info(f"出庫処理ボタン（lnkSyukko）を探します...")
+                                if not safe_find_and_click(driver, By.ID, "lnkSyukko", "出庫処理ボタン", 2, operation_logger):
+                                    raise Exception("出庫処理ボタンのクリックに失敗")
 
-                            # 再計算ボタンをクリック（通常待機）
-                            if not safe_find_and_click(driver, By.ID, "btnRecalc", "再計算ボタン", 2, operation_logger):
+                                # 出庫処理ボタンをクリックするとメッセージウィンドウが閉じて
+                                # メインウィンドウに出庫画面が表示される
+                                operation_logger.info("メインウィンドウに切り替えます...")
+                                safe_wait(2, "ウィンドウ切り替え待機", operation_logger)
+
+                                # メインウィンドウに切り替え
+                                try:
+                                    driver.switch_to.window(main_window)
+                                    operation_logger.info("メインウィンドウに切り替わりました")
+                                except Exception as e:
+                                    operation_logger.warning(f"メインウィンドウ切り替えエラー: {e}")
+                                    # フォールバック：最初のウィンドウに切り替え
+                                    windows = driver.window_handles
+                                    if windows:
+                                        driver.switch_to.window(windows[0])
+                                        operation_logger.info("最初のウィンドウに切り替えました")
+
+                                # 出庫画面への遷移を確認（ページ読み込み完了＋ボタン存在確認）
+                                if not wait_for_shipping_screen(driver, operation_logger, timeout=15):
+                                    raise Exception("出庫画面への遷移がタイムアウトしました")
+
+                            # 再計算ボタンをクリック
+                            operation_logger.info(f"再計算ボタン（btnRecalc）を探します...")
+                            if not safe_find_and_click(driver, By.ID, "btnRecalc", "再計算ボタン", 3, operation_logger):
+                                # ボタンが見つからない場合、初回のみページ構造を調査
+                                if retry_count == 0:
+                                    operation_logger.warning("再計算ボタンが見つかりません。ページ構造を調査します...")
+                                    try:
+                                        from debug_page_structure import debug_page_structure
+                                        debug_page_structure(driver, operation_logger)
+                                    except Exception as e:
+                                        operation_logger.warning(f"ページ構造調査エラー: {e}")
                                 raise Exception("再計算ボタンのクリックに失敗")
 
-                            # 出庫するボタンをクリック（通常待機）
+                            # 出庫するボタンをクリック
+                            operation_logger.info(f"出庫するボタン（btnSyuko）を探します...")
                             if not safe_find_and_click(driver, By.ID, "btnSyuko", "出庫するボタン", 2, operation_logger):
                                 raise Exception("出庫するボタンのクリックに失敗")
 
@@ -1732,9 +1935,26 @@ def check_messages(driver, user_id):
                         operation_logger.warning("出庫処理が完了できませんでした")
                         print("\n⚠️ 出庫処理が完了できませんでした")
 
-                # ウィンドウを閉じてメインウィンドウに戻る
-                driver.close()
-                driver.switch_to.window(main_window)
+                # ウィンドウ処理：マッチング処理ではメッセージウィンドウは既に閉じられている
+                # それ以外の場合はメッセージウィンドウを閉じる
+                if not title.startswith("マッチング：使用期限"):
+                    try:
+                        # メッセージウィンドウを閉じる
+                        driver.close()
+                        driver.switch_to.window(main_window)
+                        operation_logger.info("メッセージウィンドウを閉じました")
+                    except Exception as e:
+                        operation_logger.warning(f"ウィンドウクローズエラー: {e}")
+                        # エラーが発生した場合はメインウィンドウに切り替え
+                        try:
+                            driver.switch_to.window(main_window)
+                        except:
+                            windows = driver.window_handles
+                            if windows:
+                                driver.switch_to.window(windows[0])
+                else:
+                    # マッチング処理後は既にメインウィンドウにいるはず
+                    operation_logger.info("マッチング処理完了（既にメインウィンドウ）")
 
             operation_logger.info(f"連絡板メッセージ確認処理が完了しました（{target_count}件処理）")
             operation_logger.info(f"ログファイル: {log_file_path}")

@@ -39,9 +39,20 @@ def update_last_login(account):
 
 def add_account():
     """新しいアカウントを追加"""
-    store_name = input("店舗名を入力してください: ")
-    user_id = input("ユーザーIDを入力してください: ")
-    password = input("パスワードを入力してください: ")
+    store_name = input("店舗名を入力してください (0でキャンセル): ")
+    if store_name == "0":
+        print("キャンセルしました。")
+        return False
+
+    user_id = input("ユーザーIDを入力してください (0でキャンセル): ")
+    if user_id == "0":
+        print("キャンセルしました。")
+        return False
+
+    password = input("パスワードを入力してください (0でキャンセル): ")
+    if password == "0":
+        print("キャンセルしました。")
+        return False
 
     accounts = load_accounts()
     accounts.append({
@@ -52,6 +63,7 @@ def add_account():
     })
     save_accounts(accounts)
     print(f"アカウント '{store_name}' を追加しました。")
+    return True
 
 
 def update_password(account):
@@ -167,7 +179,9 @@ def select_account():
 
     while True:
         try:
-            choice = int(input("\n使用する店舗番号を選択してください: "))
+            choice = int(input("\n使用する店舗番号を選択してください (0で戻る): "))
+            if choice == 0:
+                return None
             if 1 <= choice <= len(sorted_accounts):
                 return sorted_accounts[choice - 1]
             else:

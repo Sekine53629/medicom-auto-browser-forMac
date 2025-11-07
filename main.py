@@ -33,7 +33,14 @@ def load_config():
     config_file = "config.json"
     default_config = {
         "download_path": os.path.join(os.getcwd(), "downloads"),
-        "should_print_pdf": True
+        "should_print_pdf": True,
+        "message_processing": {
+            "購入伺い": True,
+            "マッチング：使用期限": True,
+            "不動在庫転送": True,
+            "返信": True
+        },
+        "max_message_count": 10  # 連絡板の最大処理件数
     }
 
     if os.path.exists(config_file):
@@ -110,7 +117,9 @@ def main():
             print("\n=== 設定 ===")
             print(f"1. PDF保存先: {config['download_path']}")
             print(f"2. PDF自動印刷: {'ON' if config['should_print_pdf'] else 'OFF'}")
-            print("3. 戻る")
+            print(f"3. スキップするメールの種類")
+            print(f"4. 連絡板の最大処理件数: {config.get('max_message_count', 10)}件")
+            print("5. 戻る")
 
             setting_choice = normalize_input(input("\n変更する項目を選択してください: "))
 
@@ -124,6 +133,76 @@ def main():
                 config['should_print_pdf'] = not config['should_print_pdf']
                 save_config(config)
                 print(f"✓ PDF自動印刷を{'ON' if config['should_print_pdf'] else 'OFF'}に変更しました")
+            elif setting_choice == "3":
+                # スキップするメールの種類設定
+                if 'message_processing' not in config:
+                    config['message_processing'] = {
+                        "購入伺い": True,
+                        "マッチング：使用期限": True,
+                        "不動在庫転送": True,
+                        "返信": True
+                    }
+
+                msg_proc = config['message_processing']
+
+                # 処理可能なメールタイトルのリスト
+                mail_types = [
+                    "購入伺い",
+                    "マッチング：使用期限",
+                    "不動在庫転送",
+                    "返信"
+                ]
+
+                print("\n=== スキップするメールの種類 ===")
+                print("処理をスキップするメールの種類を選択してください")
+                print("\n現在の設定:")
+                for i, mail_type in enumerate(mail_types, 1):
+                    status = "処理する" if msg_proc.get(mail_type, True) else "スキップ"
+                    print(f"  {i}. {mail_type:<20} [{status}]")
+
+                print("\n番号を入力してON/OFFを切り替えます (0で戻る)")
+
+                while True:
+                    try:
+                        toggle_choice = int(normalize_input(input("\n切り替える番号を入力: ")))
+                        if toggle_choice == 0:
+                            break
+                        if 1 <= toggle_choice <= len(mail_types):
+                            mail_type = mail_types[toggle_choice - 1]
+                            # ON/OFF切り替え
+                            current = msg_proc.get(mail_type, True)
+                            msg_proc[mail_type] = not current
+                            config['message_processing'] = msg_proc
+                            save_config(config)
+
+                            new_status = "処理する" if msg_proc[mail_type] else "スキップ"
+                            print(f"✓ '{mail_type}' を [{new_status}] に変更しました")
+
+                            # 更新後の一覧を表示
+                            print("\n現在の設定:")
+                            for i, mt in enumerate(mail_types, 1):
+                                status = "処理する" if msg_proc.get(mt, True) else "スキップ"
+                                print(f"  {i}. {mt:<20} [{status}]")
+                        else:
+                            print("無効な番号です")
+                    except ValueError:
+                        print("数字を入力してください")
+            elif setting_choice == "4":
+                # 連絡板の最大処理件数設定
+                try:
+                    current_count = config.get('max_message_count', 10)
+                    print(f"\n現在の設定: {current_count}件")
+                    new_count = input("新しい処理件数を入力してください (1-50): ").strip()
+                    new_count = int(normalize_input(new_count))
+
+                    if 1 <= new_count <= 50:
+                        config['max_message_count'] = new_count
+                        save_config(config)
+                        print(f"✓ 連絡板の最大処理件数を {new_count}件 に変更しました")
+                    else:
+                        print("⚠️ 1から50の間で指定してください")
+                except ValueError:
+                    print("⚠️ 数字を入力してください")
             continue
         elif choice == "5":
             return
@@ -151,10 +230,11 @@ def main():
 
         # ログイン後のメニュー
         while True:
+            max_count = config.get('max_message_count', 10)
             print("\n=== 作業メニュー ===")
             print("1. 毎日在庫")
             print("2. 自動発注")
-            print("3. 連絡板確認（最大10件）")
+            print(f"3. 連絡板確認（最大{max_count}件）")
             print("0. 終了")
 
             work_choice = normalize_input(input("\n作業を選択してください: "))
@@ -166,7 +246,7 @@ def main():
                 if auto_order(driver, download_path, config['should_print_pdf']):
                     input("\n処理が完了しました。Enterキーを押して続行...")
             elif work_choice == "3":
-                if check_messages(driver, account['user_id']):
+                if check_messages(driver, account['user_id'], config):
                     input("\n処理が完了しました。Enterキーを押して続行...")
             elif work_choice == "0":
                 # ログアウト処理
