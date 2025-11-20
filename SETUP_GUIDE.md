@@ -1,4 +1,4 @@
-# Medicom自動化ツール セットアップガイド
+# Medicom自動化ツール セットアップガイド (Windows版)
 
 ## 目次
 1. [Python のインストール](#python-のインストール)
@@ -61,7 +61,7 @@ Python 3.10.x
 PowerShellを開いて、プロジェクトフォルダに移動します：
 
 ```powershell
-cd C:\Users\0053629\Documents\GitHub\medicom-auto-browser-forMac
+cd C:\Users\YourName\Documents\medicom-auto-browser
 ```
 
 ### 2. 必要なライブラリ一覧
@@ -71,30 +71,32 @@ cd C:\Users\0053629\Documents\GitHub\medicom-auto-browser-forMac
 | ライブラリ名 | 用途 | バージョン |
 |------------|------|----------|
 | selenium | Webブラウザ自動操作 | 4.x以降 |
-| requests | HTTPリクエスト処理 | 最新版 |
+| pywin32 | Windows API操作（印刷機能） | 最新版 |
 
 ### 3. ライブラリのインストール
 
-以下のコマンドを**順番に**実行してください：
+プロジェクトフォルダで以下のコマンドを実行してください：
+
+#### すべてのライブラリを一括インストール
+```powershell
+pip install -r requirements.txt
+```
+
+**期待される出力:**
+```
+Successfully installed selenium-4.x.x pywin32-xxx
+```
+
+または、個別にインストールする場合：
 
 #### Selenium のインストール
 ```powershell
 pip install selenium
 ```
 
-**期待される出力:**
-```
-Successfully installed selenium-4.x.x
-```
-
-#### Requests のインストール
+#### pywin32 のインストール（Windows専用印刷機能）
 ```powershell
-pip install requests
-```
-
-**期待される出力:**
-```
-Successfully installed requests-2.x.x
+pip install pywin32
 ```
 
 ### 4. インストール確認
@@ -107,7 +109,7 @@ pip list
 
 以下のライブラリが表示されればOK：
 - selenium
-- requests
+- pywin32
 
 ---
 
@@ -137,12 +139,9 @@ Selenium 4.6以降では、Chrome WebDriverが**自動的に管理**されます
 ### 方法1: バッチファイルから起動（推奨）
 
 1. **エクスプローラーでプロジェクトフォルダを開く**
-   ```
-   C:\Users\0053629\Documents\GitHub\medicom-auto-browser-forMac
-   ```
 
 2. **`run.bat` をダブルクリック**
-   - PowerShellウィンドウが開き、ツールが起動します
+   - コマンドプロンプトウィンドウが開き、ツールが起動します
    - UTF-8エンコーディングが自動設定されるため、日本語入力が正常に動作します
 
 ### 方法2: PowerShellから直接起動
@@ -150,7 +149,7 @@ Selenium 4.6以降では、Chrome WebDriverが**自動的に管理**されます
 PowerShellを開いて以下を実行：
 
 ```powershell
-cd C:\Users\0053629\Documents\GitHub\medicom-auto-browser-forMac
+cd [プロジェクトフォルダのパス]
 python main.py
 ```
 
@@ -158,9 +157,8 @@ python main.py
 
 1. **PowerShellを管理者として実行**
 
-2. **以下のコマンドを実行**
+2. **プロジェクトフォルダに移動して以下のコマンドを実行**
    ```powershell
-   cd C:\Users\0053629\Documents\GitHub\medicom-auto-browser-forMac
    powershell -ExecutionPolicy Bypass -File create_shortcut.ps1
    ```
 
@@ -200,13 +198,13 @@ python main.py
 pip install selenium
 ```
 
-### エラー: No module named 'requests'
+### エラー: No module named 'win32print' または 'win32api'
 
-**原因:** Requestsライブラリがインストールされていません
+**原因:** pywin32ライブラリがインストールされていません
 
 **解決方法:**
 ```powershell
-pip install requests
+pip install pywin32
 ```
 
 ### エラー: WebDriver の起動に失敗
@@ -250,7 +248,7 @@ pip install requests
 - [ ] Python がインストールされている（`python --version` で確認）
 - [ ] pip が使える（`pip --version` で確認）
 - [ ] Selenium がインストールされている（`pip list` で確認）
-- [ ] Requests がインストールされている（`pip list` で確認）
+- [ ] pywin32 がインストールされている（`pip list` で確認）
 - [ ] Google Chrome がインストールされている
 - [ ] `run.bat` からツールが起動できる
 
@@ -260,16 +258,14 @@ pip install requests
 
 ## サポート情報
 
-### プロジェクトフォルダ
-```
-C:\Users\0053629\Documents\GitHub\medicom-auto-browser-forMac
-```
-
 ### 主要ファイル
 - `main.py` - メインプログラム
+- `auth.py` - 認証処理
+- `operations.py` - 業務処理
+- `utils.py` - ユーティリティ関数（Windows専用）
 - `run.bat` - 起動用バッチファイル（推奨）
 - `run.ps1` - PowerShell起動スクリプト
-- `config.json` - 設定ファイル（自動生成）
+- `run.vbs` - バックグラウンド起動スクリプト
 - `accounts.json` - アカウント情報（自動生成）
 
 ### ログファイル
@@ -278,26 +274,18 @@ C:\Users\0053629\Documents\GitHub\medicom-auto-browser-forMac
 logs/operation_YYYYMMDD_HHMMSS.log
 ```
 
-### 設定ファイル（config.json）
+### 印刷設定
 
-初回起動時に自動生成されます。以下の設定が可能：
+Windows環境で自動印刷を行うには、以下のいずれかをインストールしてください：
 
-```json
-{
-  "download_path": "C:\\Users\\...\\downloads",
-  "should_print_pdf": true,
-  "message_processing": {
-    "購入伺い": true,
-    "マッチング：使用期限": true,
-    "不動在庫転送": true,
-    "返信": true
-  },
-  "max_message_count": 10
-}
-```
+**推奨:**
+- Adobe Acrobat Reader DC（多くのPCにプリインストール済み）
+- SumatraPDF（軽量で高速）
+
+詳細は `PRINT_SETUP.md` を参照してください。
 
 ---
 
 **セットアップガイド 作成日: 2025年11月**
 
-**バージョン: 1.0**
+**バージョン: 2.0 (Windows版)**

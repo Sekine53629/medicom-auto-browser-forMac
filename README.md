@@ -1,10 +1,10 @@
-# medicom-auto-browser-forMac
+# medicom-auto-browser
 
-Medicom自動ブラウザシステムのMac版です。
+Medicom自動ブラウザシステムです。
 
 ## 概要
 
-このシステムは、MedicomのWebサイトに自動ログインし、毎日在庫や自動発注などの業務を自動化するためのツールです。Windows版からMac用に移植されました。
+このシステムは、MedicomのWebサイトに自動ログインし、毎日在庫や自動発注などの業務を自動化するためのツールです。
 
 ## 主な機能
 
@@ -13,13 +13,7 @@ Medicom自動ブラウザシステムのMac版です。
 - パスワード有効期限管理（30日）
 - 毎日在庫処理
 - 自動発注処理
-- PDFダウンロード・印刷（Mac対応）
-
-## Mac版での変更点
-
-- Windows専用の`pywin32`ライブラリを削除
-- 印刷機能をMacの`lpr`コマンドに変更
-- プリンタ管理をMacの`lpstat`コマンドに変更
+- PDFダウンロード・印刷
 
 ## 必要な環境
 
@@ -32,7 +26,7 @@ Medicom自動ブラウザシステムのMac版です。
 1. リポジトリをクローン
 ```bash
 git clone <repository-url>
-cd medicom-auto-browser-forMac
+cd medicom-auto-browser
 ```
 
 2. 依存関係をインストール
@@ -41,10 +35,7 @@ pip install -r requirements.txt
 ```
 
 3. ChromeDriverをインストール
-```bash
-# Homebrewを使用する場合
-brew install chromedriver
-```
+Chromeブラウザと互換性のあるChromeDriverをインストールしてください。
 
 ## 使用方法
 
@@ -61,7 +52,7 @@ python main.py
 - `main.py` - メインエントリーポイント
 - `auth.py` - 認証関連の機能
 - `operations.py` - 業務処理関連の機能
-- `utils.py` - ユーティリティ関数（Mac版）
+- `utils.py` - ユーティリティ関数
 - `requirements.txt` - 依存関係
 - `accounts.json` - アカウント情報（自動生成）
 - `downloads/` - PDFダウンロードフォルダ
@@ -75,13 +66,7 @@ python main.py
 ## トラブルシューティング
 
 ### 印刷ができない場合
-```bash
-# デフォルトプリンタを確認
-lpstat -d
-
-# 利用可能なプリンタを確認
-lpstat -p
-```
+プリンタの設定を確認してください。
 
 ### ChromeDriverのエラー
 ChromeDriverのバージョンがChromeブラウザと合わない場合は、適切なバージョンをインストールしてください。

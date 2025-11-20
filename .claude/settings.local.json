@@ -10,7 +10,22 @@
       "Bash(pip install:*)",
       "Bash(netstat:*)",
       "Bash(findstr:*)",
-      "Bash(cat:*)"
+      "Bash(cat:*)",
+      "Bash(powershell -ExecutionPolicy Bypass -File create_package.ps1:*)",
+      "Bash(cmd /c create_package.bat)",
+      "Bash(create_package.bat)",
+      "Bash(cmd /c \"echo N | create_package.bat\")",
+      "Bash(powershell -NoProfile -Command \"$files = @(''main.py'',''auth.py'',''operations.py'',''utils.py'',''debug_page_structure.py'',''run.bat'',''run.ps1'',''run.vbs'',''README.md'',''SETUP_GUIDE.md'',''PRINT_SETUP.md'',''create_shortcut.ps1'',''convert_to_word.bat'',''create_word_template.bat''); $dest = Join-Path $env:USERPROFILE ''Desktop\\medicom-snapshot.zip''; Compress-Archive -Path $files -DestinationPath $dest -Force; Write-Output \"\"Created: $dest\"\"\")",
+      "Bash(powershell:*)",
+      "Bash(dir:*)",
+      "Bash(powershell.exe -Command \"Compress-Archive -Path ''main.py'',''auth.py'',''operations.py'',''utils.py'',''SETUP_GUIDE.md'',''PRINT_SETUP.md'',''README.md'',''run.bat'',''create_package.bat'' -DestinationPath ''/c/Users/0053629/Desktop/medicom-snapshot.zip'' -Force\")",
+      "Bash(powershell.exe -Command \"Compress-Archive -Path ''main.py'',''auth.py'',''operations.py'',''utils.py'',''SETUP_GUIDE.md'',''PRINT_SETUP.md'',''README.md'',''run.bat'',''create_package.bat'' -DestinationPath ''C:\\Users\\0053629\\Desktop\\medicom-snapshot.zip'' -Force; if (Test-Path ''C:\\Users\\0053629\\Desktop\\medicom-snapshot.zip'') { Get-Item ''C:\\Users\\0053629\\Desktop\\medicom-snapshot.zip'' | Select-Object Name,Length }\")",
+      "Bash(cmd /c \"dir C:\\Users\\0053629\\Desktop\\medicom*.zip /B 2>nul && echo. && echo ✓ ZIPファイルが作成されました！ || echo ✗ ZIPファイルが見つかりません\")",
+      "Bash(cmd /c \"echo Y | create_package.bat\")",
+      "Bash(powershell.exe -Command:*)",
+      "Bash(nul)",
+      "Bash(timeout /t 3 /nobreak)",
+      "Bash(cmd /c \"dir C:\\Users\\0053629\\Desktop\\medicom*.zip /B 2>nul\")"
     ],
     "deny": [],
     "ask": []
